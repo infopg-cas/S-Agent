@@ -222,14 +222,3 @@ class OpenAiLLM(LLMBase):
             print("OpenAi Exception:", exception)
             return []
 
-
-if __name__ == "__main__":
-    open = OpenAiLLM(api_key='**********************')
-    # print(open.get_models())
-    import pprint
-    pprint.pprint(open.chat_completion_text(
-        messages=[
-            {"role": "system", "content": ""},
-            {"role": "user", "content": "why the sky is blue?"}
-        ]))
-
