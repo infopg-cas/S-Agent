@@ -1,0 +1,13 @@
+node_modules
+
+data
+./data
+/data
+.idea
+
+
+.log
+logs
+log
+.DS_Store
+**/__pycache__/
