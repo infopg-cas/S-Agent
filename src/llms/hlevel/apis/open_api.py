@@ -224,7 +224,7 @@ class OpenAiLLM(LLMBase):
 
 
 if __name__ == "__main__":
-    open = OpenAiLLM(api_key='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')
+    open = OpenAiLLM(api_key='**********************')
     # print(open.get_models())
     import pprint
     pprint.pprint(open.chat_completion_text(
