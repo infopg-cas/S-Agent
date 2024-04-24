@@ -1,10 +1,10 @@
-from scholarAI.llms.hlevel.base import LLMBase
-from scholarAI.llms.hlevel.local.local_loader import LLMLoader
+from src.llms.hlevel.base import LLMBase
+from src.llms.hlevel.local.local_llamacpp_loader import LLMLoader
 
 MAX_MODEL_TOKEN_LIMIT = 4024
 
 
-class LocalLLM(LLMBase):
+class LocalCppLLM(LLMBase):
     def __init__(self,
                  temperature=0.6,
                  max_tokens=MAX_MODEL_TOKEN_LIMIT,

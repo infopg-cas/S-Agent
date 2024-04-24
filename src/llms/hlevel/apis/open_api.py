@@ -1,7 +1,7 @@
 import openai
 from openai import APIError, BadRequestError, RateLimitError, AuthenticationError, APITimeoutError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
-from scholarAI.llms.hlevel.base import LLMBase
+from src.llms.hlevel.base import LLMBase
 from openai import OpenAI
 from typing import Dict, List, AnyStr, Any
 import json

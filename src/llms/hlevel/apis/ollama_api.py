@@ -1,5 +1,5 @@
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
-from scholarAI.llms.hlevel.base import LLMBase
+from src.llms.hlevel.base import LLMBase
 from typing import Dict, Any, Union, Optional, Sequence, Literal
 from ollama import Client
 from ollama._types import Message, Options, RequestError, ResponseError
