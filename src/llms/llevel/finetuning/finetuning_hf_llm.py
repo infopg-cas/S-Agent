@@ -6,7 +6,7 @@ from trl import SFTTrainer
 
 class LanguageModelTrainer:
     def __init__(self, model_path, dataset_path, output_dir):
-        # init
+        # initialize
         self.model_path = model_path
         self.dataset_path = dataset_path
         self.output_dir = output_dir
