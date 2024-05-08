@@ -111,6 +111,8 @@ class OllamaLLM(LLMBase):
 
         Returns:
             Stream response
+            :param messages:
+            :param format:
         """
         try:
             stream = self.client.chat(
