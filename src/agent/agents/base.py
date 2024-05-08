@@ -5,7 +5,7 @@ from src.agent.prompts import PromptTemplate
 from queue import Queue
 
 
-class AgentBase:
+class AgentBase(ABC):
     def __init__(
             self,
             agent_name: str,
