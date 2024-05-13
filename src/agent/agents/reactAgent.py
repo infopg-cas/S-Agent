@@ -125,9 +125,13 @@ def calculate_square(x):
 def add_two(x, y):
     return x + y
 
+def subtract(x, y):
+    return x - y
+
 
 if __name__ == "__main__":
-    # open = OpenAiLLM(api_key='')
+    from Tokens import OPEN_KEY
+    open = OpenAiLLM(api_key=OPEN_KEY)
     # print(open.get_models())
     import pprint
 
@@ -135,12 +139,15 @@ if __name__ == "__main__":
              "You have a tool library\n:" \
              "1. Name: 'calculate_square', which calculate the square root.\n" \
              "2. Name: 'add_two', which adds two numbers.\n" \
-             "I want to you generate the answer step by step, you will move one step each time. you have 4 steps options: Think, Action, Observation, Finish:\n" \
+             "3. Name: 'subtract', which subtracts two numbers.\n" \
+             "I want to you generate the answer step by step, you will move one step each time. You have 4 steps options: Think, Action, Observation, Finish:\n" \
              "For action step, you will tell me the action tool name that you want to call, and I will call it and give you the result in Observation." \
              "When you get the answer, give the result in Finish step.\n" \
              "Restrictions\n: " \
              "1. You have to process only one step each time.\n" \
              "2. If you cannot process it, use the Finish step, and write 'Can't Help'." \
+             "3. If there is no tools for you to choose, give the answer by yourself." \
+             "4. Do not call actions that not defined in the tool library." \
              "Some examples are:\n" \
              "Question: What's square root of 4?\n" \
              "Thought 1: I need to use tool calculate to compute the square root of 4.\n" \
@@ -153,7 +160,8 @@ if __name__ == "__main__":
         llm=open,
         actions={
             "calculate_square": calculate_square,
-            "add_two": add_two
+            "add_two": add_two,
+            "subtract": subtract
         },
         template=prompt
     )
