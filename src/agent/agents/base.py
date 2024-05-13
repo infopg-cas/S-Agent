@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Union, Any, Dict
+from typing import Union, Any, Dict, Optional
 from src.llms.hlevel.base import LLMBase
-from src.agent.prompts import PromptTemplate
+# from src.agent.prompts import PromptTemplate
 from queue import Queue
 
 
@@ -9,18 +9,19 @@ class AgentBase(ABC):
     def __init__(
             self,
             agent_name: str,
-            agent_type: str,
             template: Any,
+            llm: Any,
+            actions: Dict = None,
             agent_description: str = None,
             memory: Dict = None,
     ):
         self.agent_name: str = agent_name
         self.description: str = agent_description
-        self.prompt_template: Union[PromptTemplate, None] = None
-        self.llm: Union[LLMBase, None] = None
+        self.prompt_template = template
+        self.llm = llm
         self.memory = memory
         self.plugins_map: Dict = {}
-        self.actions = {}
+        self.actions = actions
         self.actions_async = {}
         self.trajectory = Queue
 
@@ -30,18 +31,18 @@ class AgentBase(ABC):
     def description(self) -> str:
         return self.description
 
-    def prompt_template(self) -> PromptTemplate:
+    def prompt_template(self):
         return self.prompt_template
 
-    @property
-    def llm(self) -> Union[LLMBase, None]:
-        return self.llm
+    # @property
+    # def llm(self) -> Optional[LLMBase]:
+    #     return self.llm
 
-    @llm.setter
-    def llm(self, llm_client: LLMBase):
-        if llm_client is None or not isinstance(llm_client, LLMBase):
-            raise Exception("Invalid llm client.")
-        self.llm = llm_client
+    # @llm.setter
+    # def llm(self, llm_client: LLMBase):
+    #     if llm_client is None or not isinstance(llm_client, LLMBase):
+    #         raise Exception("Invalid llm client.")
+    #     self.llm = llm_client
 
     @abstractmethod
     def inference(self, *args, **kwargs):
