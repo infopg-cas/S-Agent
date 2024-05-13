@@ -1,1 +1,0 @@
-OPEN_KEY = 'sk-proj-Q9AukDqmoftTWNBQYVrUT3BlbkFJtbqRIpas2696sgKTVjLU'
