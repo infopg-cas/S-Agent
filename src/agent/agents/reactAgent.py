@@ -1,4 +1,4 @@
-from src.agent.agents.general_agent import GeneralAgent
+from src.agent.agents.general import GeneralAgent
 
 
 class ReActAgent(GeneralAgent):

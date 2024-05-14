@@ -2,48 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Union, Any, Dict, Optional
 from src.llms.hlevel.base import LLMBase
 # from src.agent.prompts import PromptTemplate
-from queue import Queue
+
 
 
 class AgentBase(ABC):
-    def __init__(
-            self,
-            agent_name: str,
-            template: Any,
-            llm: Any,
-            actions: Dict = None,
-            agent_description: str = None,
-            memory: Dict = None,
-    ):
-        self.agent_name: str = agent_name
-        self.description: str = agent_description
-        self.prompt_template = template
-        self.llm = llm
-        self.memory = memory
-        self.plugins_map: Dict = {}
-        self.actions = actions
-        self.actions_async = {}
-        self.trajectory = Queue
-
-    def agent_name(self) -> str:
-        return self.agent_name
-
-    def description(self) -> str:
-        return self.description
-
-    def prompt_template(self):
-        return self.prompt_template
-
-    # @property
-    # def llm(self) -> Optional[LLMBase]:
-    #     return self.llm
-
-    # @llm.setter
-    # def llm(self, llm_client: LLMBase):
-    #     if llm_client is None or not isinstance(llm_client, LLMBase):
-    #         raise Exception("Invalid llm client.")
-    #     self.llm = llm_client
-
     @abstractmethod
     def inference(self, *args, **kwargs):
         pass
@@ -70,23 +32,9 @@ class AgentBase(ABC):
 
 
 class AgentGroupBase(ABC):
-    def __init__(
-            self,
-            n_agents: int,
-            work_flow: Dict,
-    ):
-        self.agent_number = n_agents
-        self.workflow = work_flow
-        self.environment: Union[None] = None
-        self.organ_structure: Dict = {}
-        self.group_chat_pool = Queue
-
+    """Group Execution Level Constructor"""
     @abstractmethod
     def start_task(self):
-        pass
-
-    @abstractmethod
-    def generate_group_knowledge(self):
         pass
 
     @abstractmethod
@@ -96,3 +44,27 @@ class AgentGroupBase(ABC):
     @abstractmethod
     def group_eval(self):
         pass
+
+
+class EnvironmentBase(ABC):
+    """Environment Information Level Constructor"""
+    @abstractmethod
+    def get_env_info(self):
+        """general background for the task"""
+    @abstractmethod
+    def get_group_info(self):
+        """general background for the group agents as summary"""
+    @abstractmethod
+    def get_agent_info(self):
+        """general background for the group agent"""
+    @abstractmethod
+    def get_group_memory(self):
+        """get the group memory"""
+    @abstractmethod
+    def init_env(self):
+        """initialize the env"""
+    def update_env(self):
+        """update the env"""
+    @abstractmethod
+    def reset_env(self):
+        """reset the env"""
