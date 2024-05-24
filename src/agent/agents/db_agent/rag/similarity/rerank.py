@@ -1,7 +1,7 @@
 import torch
 
 class SimilarityReranker:
-    def __init__(self, table_descriptions, foreign_keys, weight=0.1):
+    def __init__(self, table_descriptions, foreign_keys, weight=0.05):
         """
         Parameters:
         - table_descriptions (dict): Descriptions of the tables.
