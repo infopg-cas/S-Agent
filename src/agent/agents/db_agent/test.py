@@ -16,15 +16,15 @@ if __name__ == "__main__":
     )
     table_structure = DB_Example.get_table_structure()
     table_descriptions = DB_Example.format_table_descriptions(table_structure)
-    foreign_keys = {
-        "iep_user": ["iep_user_role"],
-    }
+    related_tables = DB_Example.get_foreign_keys()
+    foreign_keys = DB_Example.format_foreign_keys(related_tables)
+    print(table_descriptions,6)
     query_instruction_for_retrieval = ""
     repo_id = MODEL_NAME
 
     finder = TableSimilarityFinder(model_name, table_descriptions, foreign_keys, query_instruction_for_retrieval, repo_id)
     # input user's question
-    query = ""
+    query = "Find the categories of book:《The History of American Development》 written by author Wang."
     similar_tables = finder.find_similar_table(query)
 
     print("similar tables:")

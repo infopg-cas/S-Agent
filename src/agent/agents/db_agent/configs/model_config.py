@@ -1,1 +1,1 @@
-MODEL_NAME = "bert-base-uncased"
+MODEL_NAME = "NeuML/pubmedbert-base-embeddings"
