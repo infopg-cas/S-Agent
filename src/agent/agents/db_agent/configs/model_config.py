@@ -1,0 +1,1 @@
+MODEL_NAME = "NeuML/pubmedbert-base-embeddings"
