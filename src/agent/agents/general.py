@@ -178,3 +178,4 @@ class GeneralEnv(EnvironmentBase, ABC):
         self.workflow = work_flow
         self.group_traject = Queue
         self.agent_work_info = {}
+        self.external_env = {}
