@@ -20,3 +20,8 @@ accelerate>=0.27.2
 peft>=0.10.0
 trl>=0.8.1
 transformers
+sqlalchemy_utils
+sqlalchemy==1.4.49
+pymysql==1.0.3
+alembic
+cryptography==3.4.7

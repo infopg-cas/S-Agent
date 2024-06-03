@@ -51,20 +51,26 @@ class EnvironmentBase(ABC):
     @abstractmethod
     def get_env_info(self):
         """general background for the task"""
+
     @abstractmethod
     def get_group_info(self):
         """general background for the group agents as summary"""
+
     @abstractmethod
     def get_agent_info(self):
         """general background for the group agent"""
+
     @abstractmethod
     def get_group_memory(self):
         """get the group memory"""
+
     @abstractmethod
     def init_env(self):
         """initialize the env"""
+
     def update_env(self):
         """update the env"""
+
     @abstractmethod
     def reset_env(self):
         """reset the env"""
