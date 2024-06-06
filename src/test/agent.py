@@ -133,7 +133,6 @@ class Agent:
         self.append_message(response)
 
         input_parameters = self.extract_first_nested_dict(response)
-        pprint.pprint(input_parameters)
 
         try:
             action_result = tool.func(**input_parameters)
