@@ -4,7 +4,6 @@ from src.llms.hlevel.base import LLMBase
 # from src.agent.prompts import PromptTemplate
 
 
-
 class AgentBase(ABC):
     @abstractmethod
     def inference(self, *args, **kwargs):
@@ -33,6 +32,7 @@ class AgentBase(ABC):
 
 class AgentGroupBase(ABC):
     """Group Execution Level Constructor"""
+
     @abstractmethod
     def start_task(self):
         pass
@@ -46,8 +46,25 @@ class AgentGroupBase(ABC):
         pass
 
 
+class AgentTeamBase(ABC):
+    """Team Execution Level Constructor"""
+
+    @abstractmethod
+    def start_task(self):
+        pass
+
+    @abstractmethod
+    def team_finetune(self):
+        pass
+
+    @abstractmethod
+    def team_eval(self):
+        pass
+
+
 class EnvironmentBase(ABC):
     """Environment Information Level Constructor"""
+
     @abstractmethod
     def get_env_info(self):
         """general background for the task"""

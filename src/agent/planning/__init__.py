@@ -2,6 +2,7 @@ from typing import Tuple
 
 
 class AskIsWhatALlYouNeed:
+    # Planning Class
     # 1. Memory
     # Long Term
     # Short Term
@@ -26,8 +27,8 @@ class AskIsWhatALlYouNeed:
             "think": ["action", "ask"],
             "action": ["observation"],
             "ask": ["observation"],
-            "observation": ['reflection'],
-            "reflection": ['belief', "ask", "finish"],
+            "observation": ["reflection"],
+            "reflection": ["belief", "ask", "finish"],
             "finish": "SINK"
         }
         return graph
@@ -36,10 +37,10 @@ class AskIsWhatALlYouNeed:
         try:
             prompt = f"""
                 Based on the team info and team agent details, give a belief of the current status of team task and team members.
-                You need to focus on the macro scope of the team task, and micro scope of the skills and status of each team agent in the team.
+                You need to focus on the macro scope of the team task, and micro scope of the skills, status, and progress of each team agent in the team.
                 If there is no other team member, which means you are the only one in the team. 
                 Team info: {team_info}.\n
-                Team staff detail: {team_detail}.\n
+                Team staff details: {team_detail}.\n
             """
             self.agent.messages.append(prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
@@ -117,7 +118,7 @@ class AskIsWhatALlYouNeed:
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
             self.agent.messages.append(f"Reflection {iteration}:{response}")
             self.agent.trajectory.append(f"Reflection {iteration}:{response}")
-            return response
+            return True, response
         except Exception as e:
             return False, f"{str(e)}"
 
