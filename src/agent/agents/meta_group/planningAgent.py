@@ -61,7 +61,6 @@ class PlanningAgent(GeneralAgent):
             func = getattr(self.planning_stra, pointer)
             args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory)
             res, response = func(*args)
-            pprint.pprint(self.trajectory)
 
             if not res:
                 n_bad_calls += 1
@@ -82,47 +81,13 @@ class PlanningAgent(GeneralAgent):
                 pointer, condition = self.planning_graph[pointer][0]
 
         if self.planning_graph[pointer] == 'SINK':
-            print("finish")
+            func = getattr(self.planning_stra, pointer)
+            res, response = func(query)
+            pprint.pprint(self.trajectory)
         elif max(plan_record.values()) >= 8:
             print("max iterations")
         elif n_bad_calls >= 10:
             print("max number of bad calls")
-
-            # self.recall_memory()
-            # res, response = self.planning_stra.memory(self.memory['long memory'], self.memory['short memory'], 0)
-            #
-            # if not res:
-            #     return
-            # self.prompt_template += response + "Question: " + query + '\n'
-            # self.append_message('user', self.prompt_template)
-            # for i in range(1, 8):
-            #     res, response = self.planning_stra.belief(team_info="", team_detail="", iteration=i)
-            #     if not res:
-            #         return
-            #
-            #     res, response = self.planning_stra.think(i)
-            #     if not res:
-            #         return
-            #
-            #     if "ask" in response.lower():
-            #         res, response = self.planning_stra.ask(i)
-            #         # wait for other
-            #     else:
-            #         res, response = self.planning_stra.action(i)
-            #
-            #     res, response = self.planning_stra.observation(i)
-            #     if not res:
-            #         return
-            #
-            #     res, response = self.planning_stra.reflection(i)
-            #     if not res:
-            #         return
-            #
-            #     if "do" in response.lower():
-            #         continue
-            #     elif "finish" in response.lower():
-            #         res, response = self.planning_stra.finish()
-            #         break
 
 
 if __name__ == "__main__":

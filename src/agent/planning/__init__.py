@@ -26,7 +26,7 @@ class AskIsWhatALlYouNeed:
             "action": [("observation", None)],
             "ask": [("observation", None)],
             "observation": [("reflection", None)],
-            "reflection": [("belief", "again"), ("ask", "ask"), ("finish", "finish")],
+            "reflection": [("belief", "again"), ("ask", "ask"), ("finish", "Correct answer, Finish")],
             "finish": "SINK"
         }
         return graph
@@ -123,12 +123,13 @@ class AskIsWhatALlYouNeed:
         except Exception as e:
             return False, f"{str(e)}"
 
-    def finish(self, iteration) -> Tuple[bool, str]:
+    def finish(self, query) -> Tuple[bool, str]:
         try:
-            prompt = "Based on the content, conclude your answer."
+            prompt = f"Based on the content, conclude your answer to the initial question {query}."
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            self.agent.append_message('assistant', f"Finish:{response}")
-            self.agent.trajectory.append(f"Finish:{response}")
+            self.agent.append_message('assistant', f"Finish Answer:{response}")
+            self.agent.trajectory.append(f"Finish Answer:{response}")
+            return True, response
         except Exception as e:
             return False, str(e)
