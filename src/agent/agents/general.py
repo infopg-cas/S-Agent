@@ -1,20 +1,11 @@
 import math
 import re
 from abc import ABC
-
-from src.agent.agents.base import AgentBase, AgentGroupBase, EnvironmentBase
-from typing import Union, Any, Dict, Optional, Tuple
+from abc import ABC, abstractmethod
+from src.agent.agents.base import AgentBase, AgentGroupBase, EnvironmentBase, AgentTeamBase
+from typing import Union, Any, Dict, Optional, Tuple, Type
 import pprint
 from queue import Queue
-
-def parse_function_call(input_str):
-    match = re.match(r"(\w+)\((\d+)\)", input_str)
-    if match:
-        function_name = match.group(1)
-        function_parameter = int(match.group(2))
-        return function_name, function_parameter
-    else:
-        return None
 
 
 class GeneralAgent(AgentBase):
@@ -32,6 +23,7 @@ class GeneralAgent(AgentBase):
         self.prompt_template = template
         self.llm = llm
         self.memory = memory
+        self.messages = []
         self.plugins_map: Dict = {}
         self.actions = actions
         self.actions_async = {}
@@ -46,100 +38,11 @@ class GeneralAgent(AgentBase):
     def prompt_template(self):
         return self.prompt_template
 
-    # @property
-    # def llm(self) -> Optional[LLMBase]:
-    #     return self.llm
+    def run_agent(self, query):
+        pass
 
-    # @llm.setter
-    # def llm(self, llm_client: LLMBase):
-    #     if llm_client is None or not isinstance(llm_client, LLMBase):
-    #         raise Exception("Invalid llm client.")
-    #     self.llm = llm_client
-
-    def run_agent(self, query, *args, **kwargs):
-        """
-        a question as input
-        """
-        self.prompt_template += "Question: " + query + '\n'
-        n_calls, n_bad_calls = 0, 0
-        done = False
-        obs, r, traj = None, None, []
-        for i in range(1, 8):
-            n_calls += 1
-            start = self.prompt_template + f"Thought {i}: "
-            messages = [
-                {"role": "system", "content": ""},
-                {"role": "user", "content": start}
-            ]
-            thought_action = self.llm.chat_completion_text(messages=messages)['content']
-            if 'Finish:' in thought_action:
-                self.prompt_template += f"Thought {i}: {thought_action}"
-                thought, finish = thought_action.strip().split(f"\nFinish:")
-                traj.append(f"Thought {i}: {thought}\n")
-                traj.append(f"Finish: {finish}")
-                break
-            try:
-                thought, action = thought_action.strip().split(f"\nAction {i}: ")
-                action_name, action_parameter = parse_function_call(action)
-                self.prompt_template += f"Thought {i}: {thought}\nAction {i}: {action}\n"
-                traj.append(f"Thought {i}: {thought}\n")
-                traj.append(f"Action {i}: {action}\n")
-
-            except:
-                n_bad_calls += 1
-                n_calls += 1
-                thought = thought_action.strip().split('\n')[0]
-                self.prompt_template += f"Thought {i}: {thought}\nAction {i}:"
-                messages = [
-                    {"role": "system", "content": ""},
-                    {"role": "user", "content": self.prompt_template}
-                ]
-                action = self.llm.chat_completion_text(messages=messages)['content']
-                print(action)
-                action_name, action_parameter = parse_function_call(action)
-                self.prompt_template += f"{action}\n"
-                traj.append(f"Thought {i}: {thought}\n")
-                traj.append(f"Action {i}: {action}\n")
-
-            obs, r, done = self.process_action(
-                action_name=action_name,
-                action_parameter=action_parameter
-            )
-            obs = obs.replace('\\n', "")
-            self.prompt_template += f"Observation {i}: {obs}\n"
-            traj.append(f"Observation {i}: {obs}\n")
-            messages = [
-                {"role": "system", "content": ""},
-                {"role": "user", "content": self.prompt_template}
-            ]
-
-        if not done:
-            obs, r, done = self.process_action("finish", None)
-        return obs, r, traj
-
-    def process_action(
-            self,
-            action_name,
-            action_parameter
-    ) -> Tuple[str, float, bool]:
-        reward = 0
-        status = False
-        if "finish" in action_name:
-            return f"Episode finished, reward = {0}\n", 0, True
-
-        if action_name not in self.actions.keys():
-            obs = f"Invalid action: {action_name}"
-            return obs, 0, False
-
-        # self.actions[action_name] 为function函数的闭包
-        try:
-            action_result = self.actions[action_name](int(action_parameter))
-            obs = str(action_result)
-        except:
-            obs = f"Can't use the tool, try to solve other ways."
-
-        # To do: 将 action_result 转化为obs
-        return obs, reward, status
+    def process_action(self, action_name, action_parameter):
+        pass
 
     def express_information(self):
         pass
@@ -156,18 +59,64 @@ class GeneralAgent(AgentBase):
     def recall_memory(self):
         pass
 
-
 class GeneralAgentGroup(AgentGroupBase, ABC):
     def __init__(
             self,
-            n_agents: int,
-            work_flow: Dict,
+            group_name: str,
+            add_human_as_default: bool = True
     ):
-        self.agent_number = n_agents
-        self.environment: Union[None] = None
+        self.group_name = group_name
+        self.total_agent_numbers = 0
+        self.total_group_numbers = 0
+        self.total_staff_number = 0  # user_numbers + agents_numbers
+        self.total_staff_number += 1 if add_human_as_default else 0
+
+        self.upstream_group = None
+        self.downstream_group = None
+        self.group_pool: Dict[str:Dict] = {}
+        self.environment: Union[None, Type[GeneralEnv]] = None
         self.organ_structure: Dict = {}
-        self.group_chat_pool = Queue
+        self.group_chat_pool = Dict[str: Queue] = {'main': Queue()}
         self.worker_thread_pool = []
+
+    def create_self_instance(self, **kwargs):
+        return self.__class__(**kwargs)
+
+    def add_agent_to_group(self, agent: Type[GeneralAgent], group_name: str) -> Tuple[bool,str]:
+        if group_name in self.group_pool:
+            self.group_pool[group_name][agent.agent_name] = agent
+            return True, f"Success to add {agent.agent_name} into the group {group_name} in {self.group_name}"
+        else:
+            return False, f"Failed to add {agent.agent_name} into the group {group_name} in {self.group_name} since there is no such group, suggest to create the group first"
+
+    def create_agent(self, *args, **kwargs) -> Tuple[bool,  Union[str, 'GeneralAgent']]:
+        agent_name = kwargs.get('agent_name', None)
+        llm = kwargs.get('llm', None)
+        actions = kwargs.get('actions', {})
+        prompt = kwargs.get('prompt', None)
+        if not agent_name or not llm or not prompt:
+            missing_params = [param for param in ["agent_name", "llm", "prompt"] if not locals()[param]]
+            return False, f"Failed to create agent because parameters {', '.join(missing_params)} are missing."
+
+        agent = GeneralAgent(
+            agent_name=agent_name,
+            llm=llm,
+            actions=actions,
+            template=prompt)
+        return True, agent
+
+    def create_group(self, group_name: str, add_human_as_default: bool = False) -> Tuple[bool, Union[str, 'GeneralAgentGroup']]:
+        if not group_name:
+            return False, "Failed to create group because the group name is missing."
+
+        group = GeneralAgentGroup(
+            group_name=group_name,
+            add_human_as_default=add_human_as_default
+        )
+        return True, group
+
+    def add_group_to_group(self, group_name):
+        pass
 
 
 class GeneralEnv(EnvironmentBase, ABC):
