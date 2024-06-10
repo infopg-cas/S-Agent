@@ -1,4 +1,4 @@
-from src.agent.agents.general import GeneralAgent
+from src.agent.agents.general import GeneralAgent, GeneralAgentGroup, GroupAgentTree
 from typing import Tuple
 import re
 from src.agent.planning import AskIsWhatALlYouNeed
@@ -15,7 +15,7 @@ class PlanningAgent(GeneralAgent):
         def memory_args(*args, **kwargs):
             memory = kwargs.get('memory')
             plan_record = kwargs.get('plan_record')
-            return (memory['l'], memory['s'], plan_record["memory"] + 1)
+            return (memory.get('l'), memory.get('s'), plan_record["memory"] + 1)
 
         def belief_args(*args, **kwargs):
             plan_record = kwargs.get('plan_record')
@@ -50,29 +50,36 @@ class PlanningAgent(GeneralAgent):
         """
         a question as input
         """
-        self.append_message('system', self.prompt_template)
+        self.append_message('system', self.prompt_template + "Question: " + query + '\n')
         n_calls, n_bad_calls = 0, 0
         plan_record = {}
         for key in self.planning_graph:
             plan_record[key] = 0
 
-        pointer = 'SOURCE'
+        pointer = 'memory'
         while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 8 and n_bad_calls < 10:
             func = getattr(self.planning_stra, pointer)
             args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory)
             res, response = func(*args)
+            pprint.pprint(self.trajectory)
 
             if not res:
                 n_bad_calls += 1
                 continue
 
-            plan_record[pointer] += 1
+            if pointer not in plan_record:
+                plan_record[pointer] = 1
+            else:
+                plan_record[pointer] += 1
 
             # detach
-            if type(self.planning_graph[pointer]) == list and len(self.planning_graph[pointer] > 1):
+            if type(self.planning_graph[pointer]) == list and len(self.planning_graph[pointer]) > 1:
                 for func, condition in self.planning_graph[pointer]:
                     if condition in response:
                         pointer = func
+                        break
+            else:
+                pointer, condition = self.planning_graph[pointer][0]
 
         if self.planning_graph[pointer] == 'SINK':
             print("finish")
@@ -120,7 +127,15 @@ class PlanningAgent(GeneralAgent):
 
 if __name__ == "__main__":
     from Tokens import OPEN_KEY
+    # 1. define the team tree
+    team = GroupAgentTree()
 
+    # 2. define the group
+    planning_group = GeneralAgentGroup(
+        group_name='meta group'
+    )
+
+    # 3. create a agent and add to team
     prompt = "You are a Planning agent, you job is to:\n" \
              "1. Split the task description query (input) to several subtasks. \n" \
              "2. Create a new agent for this subtask, and define the flow between agents. \n" \
@@ -132,8 +147,8 @@ if __name__ == "__main__":
              "Restrictions\n: " \
              "1. Do not call actions that not defined in the tool library.\n" \
 
-    agent = PlanningAgent(
-        agent_name='reAct',
+    p_agent = PlanningAgent(
+        agent_name='planning agent',
         llm=OpenAiLLM(api_key=OPEN_KEY),
         actions={
             "create_group": None,
@@ -141,4 +156,19 @@ if __name__ == "__main__":
         },
         template=prompt
     )
-    agent.run_agent("What's the weather today?")
+    team.stray_agents['planning agent'] = p_agent
+
+    # 4. add group to the team
+    team.add_root({"group_name": 'meta group', "metadata": planning_group})
+
+    # 5. add agent to the group
+    res, msg = team.add_agent_to_group(
+        agent=p_agent,
+        group_name='meta group'
+    )
+    print(msg)
+    import pprint
+    pprint.pprint(team.print_tree())
+    # print(planning_group.agent_organ_graph)
+    print(planning_group.total_agent_numbers, planning_group.total_user_numbers, planning_group.total_staff_number)
+    p_agent.run_agent("What's the weather today?")
