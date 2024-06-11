@@ -54,6 +54,6 @@ if __name__ == "__main__":
         },
         template=prompt
     )
-    # cobs, r, j = agent.run_agent("What's the difference of square root of 3 and the square root of 259?")
-    obs, r, j = agent.run_agent("What's the weather today?")
+    cobs, r, j = agent.run_agent("What's the difference of square root of 3 and the square root of 259?")
+    # obs, r, j = agent.run_agent("What's the weather today?")
     pprint.pprint(j)
