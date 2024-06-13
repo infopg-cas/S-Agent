@@ -111,6 +111,7 @@ if __name__ == "__main__":
              "2. Name: 'create_agent', which create an new agent.\n" \
              "Restrictions\n: " \
              "1. Do not call actions that not defined in the tool library.\n" \
+             "2. You have to response short but clean."
 
     p_agent = PlanningAgent(
         agent_name='planning agent',
@@ -136,4 +137,4 @@ if __name__ == "__main__":
     pprint.pprint(team.print_tree())
     # print(planning_group.agent_organ_graph)
     print(planning_group.total_agent_numbers, planning_group.total_user_numbers, planning_group.total_staff_number)
-    p_agent.run_agent("What's the weather today?")
+    p_agent.run_agent("Can you help me to grade the subjective questionnaire, I have all my questionnaire in my database?")

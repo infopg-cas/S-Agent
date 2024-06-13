@@ -67,6 +67,7 @@ class GroupAgentTree(Tree):
         self.stray_agents = {}
         self.stray_groups = {}
         self.group_pool = {}
+        self.mac_env: Union[None, Type[GeneralEnv()]] = GeneralEnv()
 
     def add_agent_to_group(
             self, agent: Type[GeneralAgent],
@@ -153,10 +154,11 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
         self.downstream_group = None
         self.agent_organ_graph: Dict[Type[GeneralAgent], List] = {}
         self.group_pool: Dict[str: Dict] = {}
-        self.environment: Union[None, Type[GeneralEnv]] = GeneralEnv()
+        self.group_env: Union[None, Type[GeneralEnv()]] = GeneralEnv()
 
         self.group_chat_pool: Dict[str: Queue] = {'main': Queue()}
         self.worker_thread_pool = []
+
     def create_self_instance(self, **kwargs):
         return self.__class__(**kwargs)
 
@@ -164,7 +166,7 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
         self.agent_organ_graph[agent] = []
         self.total_agent_numbers += 1
         self.total_staff_number += 1
-        self.environment.update_env()
+        self.group_env.update_env()
 
     def group_eval(self):
         pass
@@ -179,16 +181,18 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
 class GeneralEnv(EnvironmentBase, ABC):
     def __init__(
             self,
-            group_structure=None,
-            work_flow = None
+            group_pointer,
+            agent_work_flow=None,
+            group_structure = None,
     ):
         self.agent_basic_info = {}
         self.group_goal = []
         self.group_agent_goal = {}
-        self.workflow = work_flow
+        self.workflow = agent_work_flow
         self.group_traject = Queue
         self.agent_work_info = {}
         self.external_env = {}
+        self.group_structure_pointer = group_pointer
 
     def get_group_info(self):
         # get information in group_Structure
