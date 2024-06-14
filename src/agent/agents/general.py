@@ -195,20 +195,20 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
 
 
 class GeneralEnv(EnvironmentBase, ABC):
-    # def __init__(
-    #         self,
-    #         group_pointer,
-    #         agent_work_flow=None,
-    #         group_structure=None,
-    # ):
-    #     self.agent_basic_info = {}
-    #     self.group_goal = []
-    #     self.group_agent_goal = {}
-    #     self.workflow = agent_work_flow
-    #     self.group_traject = Queue
-    #     self.agent_work_info = {}
-    #     self.external_env = {}
-    #     self.group_structure_pointer = group_pointer
+    def __init__(
+            self,
+            group_pointer,
+            agent_work_flow=None,
+            group_structure=None,
+    ):
+        self.agent_basic_info = {}
+        self.group_goal = []
+        self.group_agent_goal = {}
+        self.workflow = agent_work_flow
+        self.group_traject = Queue
+        self.agent_work_info = {}
+        self.external_env = {}
+        self.group_structure_pointer = group_pointer
 
     def get_group_info(self, group_pointer, root): # pass in the root pointer for the get
         # get information in group_Structure
