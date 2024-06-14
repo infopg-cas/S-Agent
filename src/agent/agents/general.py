@@ -7,7 +7,7 @@ from typing import Union, Any, Dict, Optional, Tuple, Type, List
 from src.utils.tree_structure import TreeNode, Tree
 import pprint
 from queue import Queue
-
+import weakref
 
 class GeneralAgent(AgentBase):
     def __init__(
@@ -29,6 +29,7 @@ class GeneralAgent(AgentBase):
         self.actions = actions
         self.actions_async = {}
         self.trajectory = []
+        self.upper_pointer = None
 
     def agent_name(self) -> str:
         return self.agent_name
@@ -60,11 +61,23 @@ class GeneralAgent(AgentBase):
     def recall_memory(self):
         pass
 
+    def perception_env(self):
+        group = self.upper_pointer() if self.upper_pointer else None
+        if hasattr(group, 'metadata'):
+            metadata = group.metadata
+            team = metadata.upper_pointer() if metadata and metadata.upper_pointer() else None
+            if team:
+                sub_team = team.find_node_by_attribute(team.roots, 'group_name', 'meta group')
+                team.mac_env.get_group_info('meta group', sub_team)
+            else:
+                print("Tree function cannot be called. Group or Tree is not set.")
+        else:
+            print("Right Group Pointer")
+
 
 class GroupAgentTree(Tree):
     def __init__(self):
         super().__init__()
-        self.tree_pointer = '#root'
         self.stray_agents = {}
         self.stray_groups = {}
         self.group_pool = {}
@@ -78,6 +91,7 @@ class GroupAgentTree(Tree):
             group = self.find_node("group_name", group_name)
             if group:
                 group.metadata.add_agent(agent)
+                agent.upper_pointer = weakref.ref(group)
                 return True, f"Success to add {agent.agent_name} into the group {group_name}."
             else:
                 return True, f"Fail to add {agent.agent_name} into the group {group_name} since there is no such group, suggest to create the group first. "
@@ -159,6 +173,7 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
 
         self.group_chat_pool: Dict[str: Queue] = {'main': Queue()}
         self.worker_thread_pool = []
+        self.upper_pointer = None
 
     def create_self_instance(self, **kwargs):
         return self.__class__(**kwargs)
