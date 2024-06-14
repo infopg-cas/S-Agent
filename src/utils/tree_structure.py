@@ -1,4 +1,5 @@
 from collections import deque
+import weakref
 
 class TreeNode:
     def __init__(self, attributes):
@@ -32,6 +33,8 @@ class Tree:
         """Add a new root to the tree."""
         new_root = TreeNode(attributes)
         self.roots.append(new_root)
+        if hasattr(new_root, 'metadata'):
+            new_root.metadata.upper_pointer = weakref.ref(self)
         return new_root
 
     def add_node(self, parent_attribute, parent_value, child_attributes):
