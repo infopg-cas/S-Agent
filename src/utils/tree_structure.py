@@ -44,11 +44,13 @@ class Tree:
 
     # BSF
     def find_node_by_attribute(self, current_node, attribute, value):
-        queue = deque([current_node])
+        queue = deque(current_node) if type(current_node) == list else deque([current_node])
         while queue:
             node = queue.popleft()
-            if attribute in vars(node) and vars(node)[attribute] == value:
+            if hasattr(node, attribute) and getattr(node, attribute) == value:
                 return node
+
+            print(node)
             for child in node.children:
                 queue.append(child)
         return None

@@ -92,6 +92,7 @@ class PlanningAgent(GeneralAgent):
 
 if __name__ == "__main__":
     from Tokens import OPEN_KEY
+
     # 1. define the team tree
     team = GroupAgentTree()
 
@@ -134,7 +135,12 @@ if __name__ == "__main__":
     )
     print(msg)
     import pprint
+
     pprint.pprint(team.print_tree())
+
+    sub_team = team.find_node_by_attribute(team.roots, 'group_name', 'meta group')
+    team.mac_env.get_group_info('meta group', sub_team)
+
     # print(planning_group.agent_organ_graph)
     print(planning_group.total_agent_numbers, planning_group.total_user_numbers, planning_group.total_staff_number)
-    p_agent.run_agent("Can you help me to grade the subjective questionnaire, I have all my questionnaire in my database?")
+    # p_agent.run_agent("Can you help me to grade the subjective questionnaire, I have all my questionnaire in my database?")
