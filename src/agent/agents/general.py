@@ -64,6 +64,7 @@ class GeneralAgent(AgentBase):
 class GroupAgentTree(Tree):
     def __init__(self):
         super().__init__()
+        self.tree_pointer = '#root'
         self.stray_agents = {}
         self.stray_groups = {}
         self.group_pool = {}
@@ -77,7 +78,7 @@ class GroupAgentTree(Tree):
             group = self.find_node("group_name", group_name)
             if group:
                 group.metadata.add_agent(agent)
-                return True, f"Success to add {agent.agent_name} into the group {group_name}. "
+                return True, f"Success to add {agent.agent_name} into the group {group_name}."
             else:
                 return True, f"Fail to add {agent.agent_name} into the group {group_name} since there is no such group, suggest to create the group first. "
         else:
@@ -154,7 +155,7 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
         self.downstream_group = None
         self.agent_organ_graph: Dict[Type[GeneralAgent], List] = {}
         self.group_pool: Dict[str: Dict] = {}
-        self.group_env: Union[None, Type[GeneralEnv()]] = GeneralEnv()
+        # self.group_env: Union[None, Type[GeneralEnv()]] = GeneralEnv(group_pointer=self.group_name)
 
         self.group_chat_pool: Dict[str: Queue] = {'main': Queue()}
         self.worker_thread_pool = []
@@ -166,7 +167,7 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
         self.agent_organ_graph[agent] = []
         self.total_agent_numbers += 1
         self.total_staff_number += 1
-        self.group_env.update_env()
+        # self.group_env.update_env()
 
     def group_eval(self):
         pass
@@ -179,23 +180,24 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
 
 
 class GeneralEnv(EnvironmentBase, ABC):
-    def __init__(
-            self,
-            group_pointer,
-            agent_work_flow=None,
-            group_structure = None,
-    ):
-        self.agent_basic_info = {}
-        self.group_goal = []
-        self.group_agent_goal = {}
-        self.workflow = agent_work_flow
-        self.group_traject = Queue
-        self.agent_work_info = {}
-        self.external_env = {}
-        self.group_structure_pointer = group_pointer
+    # def __init__(
+    #         self,
+    #         group_pointer,
+    #         agent_work_flow=None,
+    #         group_structure=None,
+    # ):
+    #     self.agent_basic_info = {}
+    #     self.group_goal = []
+    #     self.group_agent_goal = {}
+    #     self.workflow = agent_work_flow
+    #     self.group_traject = Queue
+    #     self.agent_work_info = {}
+    #     self.external_env = {}
+    #     self.group_structure_pointer = group_pointer
 
-    def get_group_info(self):
+    def get_group_info(self, group_pointer, root): # pass in the root pointer for the get
         # get information in group_Structure
+        pprint.pprint(root)
         return "group_info"
 
     def get_agent_info(self):
