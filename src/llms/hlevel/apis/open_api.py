@@ -145,7 +145,7 @@ class OpenAiLLM(LLMBase):
     def chat_completion_json(
             self,
             messages: List,
-            function_format: List,
+            function_format: Any,
             function_call: AnyStr = 'auto',
             max_tokens: int = 2048,
             **kwargs: Any

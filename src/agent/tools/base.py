@@ -8,6 +8,7 @@ class Tool:
             func: Callable
     ) -> None:
         self.name = name
+        self.description = description
         self.func = func
 
     def act(self, **kwargs) -> str:
