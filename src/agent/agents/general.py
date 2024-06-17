@@ -3,11 +3,14 @@ import re
 from abc import ABC
 from abc import ABC, abstractmethod
 from src.agent.agents.base import AgentBase, AgentGroupBase, EnvironmentBase, AgentTeamBase
+from src.agent.tools.base import Tool
+from src.llms.hlevel.base import LLMBase
 from typing import Union, Any, Dict, Optional, Tuple, Type, List
 from src.utils.tree_structure import TreeNode, Tree
 import pprint
 from queue import Queue
 import weakref
+
 
 class GeneralAgent(AgentBase):
     def __init__(
@@ -16,7 +19,7 @@ class GeneralAgent(AgentBase):
             template: Any,
             llm: Any,
             actions: Dict = None,
-            agent_description: str = None,
+            agent_description: str = 'description not known',
             memory: Dict = {},
     ):
         self.agent_name: str = agent_name
@@ -67,8 +70,13 @@ class GeneralAgent(AgentBase):
             metadata = group.metadata
             team = metadata.upper_pointer() if metadata and metadata.upper_pointer() else None
             if team:
-                sub_team = team.find_node_by_attribute(team.roots, 'group_name', 'meta group')
-                team.mac_env.get_group_info('meta group', sub_team)
+                sub_team = team.find_node_by_attribute(team.roots, 'group_name', group.group_name)
+                return team.mac_env.get_group_info(
+                    group_name=group.group_name,
+                    current_agent_name=self.agent_name,
+                    group_data=sub_team,
+                    search_group_agent=True
+                )
             else:
                 print("Tree function cannot be called. Group or Tree is not set.")
         else:
@@ -100,6 +108,10 @@ class GroupAgentTree(Tree):
 
     def create_agent(
             self,
+            agent_name:str = None,
+            llm: Type[LLMBase] = None,
+            actions: Dict[str, Tool] = {},
+            prompts: str = None,
             *args,
             **kwargs
     ) -> Tuple[bool, Union[str, 'GeneralAgent']]:
@@ -158,9 +170,11 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
     def __init__(
             self,
             group_name: str,
+            description: str = None,
             add_human_as_default: bool = True
     ):
         self.group_name = group_name
+        self.group_description = description
         self.total_agent_numbers = 0
         self.total_user_numbers = 1 if add_human_as_default else 0
         self.total_staff_number = self.total_user_numbers + self.total_agent_numbers  # user_numbers + agents_numbers
@@ -197,7 +211,7 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
 class GeneralEnv(EnvironmentBase, ABC):
     def __init__(
             self,
-            group_pointer,
+            group_pointer=None,
             agent_work_flow=None,
             group_structure=None,
     ):
@@ -210,14 +224,46 @@ class GeneralEnv(EnvironmentBase, ABC):
         self.external_env = {}
         self.group_structure_pointer = group_pointer
 
-    def get_group_info(self, group_pointer, root): # pass in the root pointer for the get
+    def get_group_info(
+            self,
+            group_name,
+            group_data: Type[TreeNode],
+            current_agent_name: str = None,
+            search_group_agent: bool = False
+    ):  # pass in the root pointer for the get
         # get information in group_Structure
-        pprint.pprint(root)
-        return "group_info"
+        group_info = f'Current Group: {group_name}\n'
+        group_metadata: Type[GeneralAgentGroup] = group_data.metadata
+        group_info += f"Group Description: {group_metadata.group_description}\n"
+        if search_group_agent:
+            group_info += self.get_agent_info(
+                agent_graph=group_metadata.agent_organ_graph,
+                current_agent_name=current_agent_name,
+                whether_human=True if group_metadata.total_user_numbers > 0 else False,
+            )
 
-    def get_agent_info(self):
+        if len(group_data.children) > 0:
+            group_info += 'Children Groups Includes: \n'
+            for children in group_data.children:
+                children_meta = children.metadata
+                group_info += f" -Group name: {children_meta.group_name}, Description: {children_meta.group_description}\n"
+        return group_info
+
+    def get_agent_info(self, agent_graph, current_agent_name, whether_human):
         # get information through work_flow
-        return "agent_info"
+        agent_group_info = 'Current Staffs in the group: \n'
+        if whether_human:
+            agent_group_info += ' - Human Staff: supervisor for the group, can take any questions. \n'
+        for agent in agent_graph.keys():
+            agent_group_info += f' - {agent.agent_name} {"(YOU)" if current_agent_name == agent.agent_name else ""}: {agent.description}; '
+            if len(agent_graph[agent]) > 0:
+                agent_group_info += f'Will send their work to {", ".join([s_agent.agent_name for s_agent in agent_graph[agent]])} when done.'
+            agent_group_info += '\n'
+
+        if not whether_human and agent_graph == {}:
+            agent_group_info += f"No Staff in this group now, might consider to create one."
+
+        return agent_group_info
 
     def get_env_info(self):
         return "env_info"

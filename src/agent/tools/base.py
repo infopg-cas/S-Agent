@@ -1,7 +1,12 @@
 from typing import Callable
 
 class Tool:
-    def __init__(self, name: str, func: Callable) -> None:
+    def __init__(
+            self,
+            name: str,
+            description: str,
+            func: Callable
+    ) -> None:
         self.name = name
         self.func = func
 
