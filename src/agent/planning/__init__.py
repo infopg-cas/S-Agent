@@ -78,14 +78,15 @@ class AskIsWhatALlYouNeed:
             return False, f"{str(e)}"
 
     def action(self, tool, iteration) -> Tuple[bool, str]:
-        def generate_dynamic_class(func):
+        def generate_dynamic_class(tool):
             import inspect
-            parameters = inspect.signature(func).parameters
-            print(parameters)
+            parameters = inspect.signature(tool.func).parameters
 
             fields = {}
             for name, param in parameters.items():
-                print(name, param)
+                if name == 'args' or name == 'kwargs':
+                    continue
+
                 if param.annotation != inspect.Parameter.empty:
                     annotation = param.annotation
                 else:
@@ -94,21 +95,32 @@ class AskIsWhatALlYouNeed:
                 default_value = param.default if param.default is not inspect.Parameter.empty else ...
                 fields[name] = (annotation, default_value)
 
-            DynamicClass = create_model('DynamicClass', **fields)
+            DynamicClass = create_model(
+                'DynamicClass',
+                **fields,
+                __config__=type('Config', (), {'arbitrary_types_allowed': True})
+            )
             return DynamicClass
 
         try:
             DynamicClass = generate_dynamic_class(tool)
-            print(DynamicClass.schema())
+            format = [
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": DynamicClass.schema()
+                }
+            ],
             prompt = f"""
                 For Action state, you will tell me the parameters in a json format by the detail that I give you, and I will call it and give you the result. 
                 """
             self.agent.append_message('user', prompt)
-            response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
+            response = self.agent.llm.chat_completion_json(messages=self.agent.messages, function_format=format)['content']
             self.agent.append_message('assistant', f"Action {iteration}: {response}")
             self.agent.trajectory.append(f"Action {iteration}: {response}")
             return True, response
         except Exception as e:
+            print(str(e))
             return False, f"{str(e)}"
 
     def observation(self, iteration) -> Tuple[bool, str]:
