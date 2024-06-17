@@ -3,6 +3,7 @@ from typing import Tuple
 import re
 from src.agent.planning import AskIsWhatALlYouNeed
 from src.llms.hlevel import OpenAiLLM
+from src.agent.tools.base import Tool
 
 
 class PlanningAgent(GeneralAgent):
@@ -19,7 +20,12 @@ class PlanningAgent(GeneralAgent):
 
         def belief_args(*args, **kwargs):
             plan_record = kwargs.get('plan_record')
-            return ("", "", plan_record["belief"] + 1)
+            return (self.perception_env(), plan_record["belief"] + 1)
+
+        def action_args(*args, **kwargs):
+            plan_record = kwargs.get('plan_record')
+            tool_name = kwargs.get('tool_name')
+            return (self.actions[tool_name], plan_record["action"] + 1)
 
         def ask_args(*args, **kwargs):
             plan_record = kwargs.get('plan_record')
@@ -29,6 +35,7 @@ class PlanningAgent(GeneralAgent):
             "memory": memory_args,
             "belief": belief_args,
             "ask": ask_args,
+            "action":action_args
         }
 
         if pointer in POINTER_CONFIG:
@@ -50,6 +57,7 @@ class PlanningAgent(GeneralAgent):
         """
         a question as input
         """
+        tool_name = None
         self.append_message('system', self.prompt_template + "Question: " + query + '\n')
         n_calls, n_bad_calls = 0, 0
         plan_record = {}
@@ -59,7 +67,7 @@ class PlanningAgent(GeneralAgent):
         pointer = 'memory'
         while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 8 and n_bad_calls < 10:
             func = getattr(self.planning_stra, pointer)
-            args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory)
+            args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory, tool_name=tool_name)
             res, response = func(*args)
 
             if not res:
@@ -76,6 +84,11 @@ class PlanningAgent(GeneralAgent):
                 for func, condition in self.planning_graph[pointer]:
                     if condition in response:
                         pointer = func
+                        if pointer == 'action':
+                            import re
+                            import json
+                            tool_name = json.loads(re.search(r'\{.*\}', response).group()).get('tool_name', '')
+                            print(86, tool_name)
                         break
             else:
                 pointer, condition = self.planning_graph[pointer][0]
@@ -98,10 +111,11 @@ if __name__ == "__main__":
 
     # 2. define the group
     planning_group = GeneralAgentGroup(
-        group_name='meta group'
+        group_name='Meta Group',
+        description='An Administrative group that has the highest decision level and manage the Worker Group.'
     )
 
-    # 3. create a agent and add to team
+    # 3. create an agent and add to team
     prompt = "You are a Planning agent, you job is to:\n" \
              "1. Split the task description query (input) to several subtasks. \n" \
              "2. Create a new agent for this subtask, and define the flow between agents. \n" \
@@ -116,33 +130,51 @@ if __name__ == "__main__":
 
     p_agent = PlanningAgent(
         agent_name='planning agent',
+        agent_description= "Expert Agent in planning the task & subtasks for the team.",
         llm=OpenAiLLM(api_key=OPEN_KEY),
-        actions={
-            "create_group": None,
-            "create_agent": None,
+        actions= {
+            "create_group": Tool(
+                name='create_group_tool',
+                description='Create a new group in the team.',
+                func=team.create_group
+            ),
+            "create_agent": Tool(
+                name='create_agent_tool',
+                description='Create a agent in the group.',
+                func=team.create_agent
+            ),
+            "add_agent_to_the_group": Tool(
+                    name='add agent tool',
+                    description='Add a agent to a group.',
+                    func=team.add_agent_to_group
+                ),
+            "add_group_to_group": Tool(
+                    name='add_group_to_group tool',
+                    description='Add a group to a group as subgroup.',
+                    func=team.add_group_to_group
+            )
         },
         template=prompt
     )
     team.stray_agents['planning agent'] = p_agent
 
     # 4. add group to the team
-    team.add_root({"group_name": 'meta group', "metadata": planning_group})
+    team.add_root({"group_name": 'Meta Group', "metadata": planning_group})
 
     # 5. add agent to the group
     res, msg = team.add_agent_to_group(
         agent=p_agent,
-        group_name='meta group'
+        group_name='Meta Group'
     )
     print(msg)
     import pprint
 
-    pprint.pprint(team.print_tree())
-
-    # sub_team = team.find_node_by_attribute(team.roots, 'group_name', 'meta group')
     # team.mac_env.get_group_info('meta group', sub_team)
 
     # print(planning_group.agent_organ_graph)
-    print(planning_group.total_agent_numbers, planning_group.total_user_numbers, planning_group.total_staff_number, planning_group.upper_pointer)
 
-    p_agent.perception_env()
-    # p_agent.run_agent("Can you help me to grade the subjective questionnaire, I have all my questionnaire in my database?")
+    # print(p_agent.perception_env())
+    p_agent.run_agent("Can you help me to grade the subjective questionnaire, I have all my questionnaire in my database?")
+
+    sub_team = team.find_node_by_attribute(team.roots, 'group_name', 'Meta Group')
+    print(team.mac_env.get_group_info('Meta Group', sub_team))

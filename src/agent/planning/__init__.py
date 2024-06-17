@@ -1,4 +1,5 @@
 from typing import Tuple, Dict, Tuple, List, Union
+from pydantic import BaseModel, create_model
 
 class AskIsWhatALlYouNeed:
     # Planning Class
@@ -43,14 +44,14 @@ class AskIsWhatALlYouNeed:
         except Exception as e:
             return False, f"{str(e)}"
 
-    def belief(self, team_info, team_detail, iteration) -> Tuple[bool, str]:
+    def belief(self, team_info, iteration) -> Tuple[bool, str]:
         try:
             prompt = f"""
-                Based on the team info and team agent details, give a belief of the current status of team task and team members.
+                Based on the Team Info, give a belief of the current status of team task and team members.
                 You need to focus on the macro scope of the team task, and micro scope of the skills, status, and progress of each team agent in the team.
-                If there is no other team member, which means you are the only one in the team. 
-                Team info: {team_info}.
-                Team staff details: {team_detail}.
+                If there is no other team member, which means you are the only one in the team. \n 
+                Team Info: \n
+                {team_info}
             """
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
@@ -62,7 +63,9 @@ class AskIsWhatALlYouNeed:
 
     def think(self, iteration) -> Tuple[bool, str]:
         try:
-            prompt = f"""This about what to act first, if you know which tool to use to process the task, return by start with "I want to act" and then give the reasoning. \n
+            prompt = f"""This about what to act first, if you know which tool to use to process the task, 
+                    return by start with "I want to act" and then give the tool you want to ask in json key_value pair, then give a short reasoning. 
+                    (Example: I want to act - {'{"tool_name": "tool_for_act"}'}) - short reasoning here.... \n
                     If you think there is no tools for you, or you think there is gap for you to process the task, 
                     just return 'I want to Ask'. 
                     """ + f"Thought {iteration}:"
@@ -74,10 +77,31 @@ class AskIsWhatALlYouNeed:
         except Exception as e:
             return False, f"{str(e)}"
 
-    def action(self, iteration) -> Tuple[bool, str]:
+    def action(self, tool, iteration) -> Tuple[bool, str]:
+        def generate_dynamic_class(func):
+            import inspect
+            parameters = inspect.signature(func).parameters
+            print(parameters)
+
+            fields = {}
+            for name, param in parameters.items():
+                print(name, param)
+                if param.annotation != inspect.Parameter.empty:
+                    annotation = param.annotation
+                else:
+                    annotation = str
+
+                default_value = param.default if param.default is not inspect.Parameter.empty else ...
+                fields[name] = (annotation, default_value)
+
+            DynamicClass = create_model('DynamicClass', **fields)
+            return DynamicClass
+
         try:
+            DynamicClass = generate_dynamic_class(tool)
+            print(DynamicClass.schema())
             prompt = f"""
-                For Action state, you will tell me the action tool name that you want to call, and I will call it and give you the result. 
+                For Action state, you will tell me the parameters in a json format by the detail that I give you, and I will call it and give you the result. 
                 """
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
