@@ -139,7 +139,7 @@ class GroupAgentTree(Tree):
             add_human_as_default=add_human_as_default
         )
         self.stray_groups[group_name] = group
-        return True, "Success to create the group."
+        return True, "Success to create an empty group, now try to create new agent or add existing agent to the group."
 
     def add_group_to_group(
             self,

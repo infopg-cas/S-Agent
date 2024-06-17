@@ -59,7 +59,7 @@ class AskIsWhatALlYouNeed:
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
             self.agent.append_message('assistant', f"Belief {iteration}: {response}.")
             self.agent.trajectory.append(f"Belief {iteration}: {response}.")
-            return True, f"Belief: {response}."
+            return True, f"Belief {iteration}: {response}."
         except Exception as e:
             return False, f"{str(e)}"
 
@@ -103,21 +103,19 @@ class AskIsWhatALlYouNeed:
             return create_model(
                 'DynamicClass',
                 **fields,
-                __config__=type('Config', (), {'arbitrary_types_allowed': True})
+                #__config__=type('Config', (), {'arbitrary_types_allowed': True})
             )
 
         try:
+            print(110, tool.name)
             DynamicClass = generate_dynamic_class(tool)
-            print("here")
-            print(DynamicClass.schema())
             format = [
                 {
                     "name": tool.name,
                     "description": tool.description,
                     "parameters": DynamicClass.schema()
                 }
-            ],
-            pprint.pprint(format)
+            ]
             prompt = f"""
                 For Action state, you will tell me the parameters in a json format by the detail that I give you, and I will call it and give you the result. 
                 """
@@ -132,8 +130,7 @@ class AskIsWhatALlYouNeed:
 
     def observation(self, iteration) -> Tuple[bool, str]:
         try:
-            prompt = f"""Observation {iteration}:{self.agent.messages[-1]}."""
-            self.agent.append_message('user', prompt)
+            prompt = f"""Observation {iteration}:{self.agent.messages[-1].get('content')}."""
             self.agent.trajectory.append(prompt)
             return True, prompt
         except Exception as e:
@@ -154,10 +151,10 @@ class AskIsWhatALlYouNeed:
     def reflection(self, iteration) -> Tuple[bool, str]:
         try:
             prompt = "Try to do self-reflection on the answer provide above. " \
-                     "If you think the answer is correct, then just return 'Correct answer, Finish'. " \
-                     "If you think the answer is wrong or not enough to finish, just return 'Not end, do again'." \
+                     "If you think the answer is enough to finish your task, then just return 'Correct answer, Finish'. " \
+                     "If you think the answer is Not enough to finish or wrong, just return 'Not end, do again'." \
                      "If you are not sure about the answer, but willing to ask other team member to check for you, just return 'Ask for check.'" \
-                     "Don't return another answers."
+                     "Don't return an another answer."
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
             self.agent.append_message('assistant', f"Reflection {iteration}:{response}")

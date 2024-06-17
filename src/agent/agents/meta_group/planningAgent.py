@@ -4,6 +4,7 @@ import re
 from src.agent.planning import AskIsWhatALlYouNeed
 from src.llms.hlevel import OpenAiLLM
 from src.agent.tools.base import Tool
+import json
 
 
 class PlanningAgent(GeneralAgent):
@@ -35,7 +36,7 @@ class PlanningAgent(GeneralAgent):
             "memory": memory_args,
             "belief": belief_args,
             "ask": ask_args,
-            "action":action_args
+            "action": action_args
         }
 
         if pointer in POINTER_CONFIG:
@@ -74,6 +75,14 @@ class PlanningAgent(GeneralAgent):
                 n_bad_calls += 1
                 continue
 
+            # call back => for actions
+            if pointer == 'action':
+                res, payload = self.actions[tool_name].func(**response)
+                if not res:
+                    continue
+
+                self.append_message('user', str(payload))
+
             if pointer not in plan_record:
                 plan_record[pointer] = 1
             else:
@@ -88,7 +97,6 @@ class PlanningAgent(GeneralAgent):
                             import re
                             import json
                             tool_name = json.loads(re.search(r'\{.*\}', response).group()).get('tool_name', '')
-                            print(86, tool_name)
                         break
             else:
                 pointer, condition = self.planning_graph[pointer][0]
@@ -99,8 +107,10 @@ class PlanningAgent(GeneralAgent):
             pprint.pprint(self.trajectory)
         elif max(plan_record.values()) >= 8:
             print("max iterations")
+            pprint.pprint(self.trajectory)
         elif n_bad_calls >= 10:
             print("max number of bad calls")
+            pprint.pprint(self.trajectory)
 
 
 if __name__ == "__main__":
@@ -120,19 +130,19 @@ if __name__ == "__main__":
              "1. Split the task description query (input) to several subtasks. \n" \
              "2. Create a new agent for this subtask, and define the flow between agents. \n" \
              "3. Add the agent that created to the team.\n" \
-             "I want to follow the guidance by humans.\n" \
+             "Follow the guidance by humans.\n" \
              "You have a tool library\n:" \
              "1. Name: 'create_group', which create a new agent group.\n" \
              "2. Name: 'create_agent', which create an new agent.\n" \
              "Restrictions\n: " \
              "1. Do not call actions that not defined in the tool library.\n" \
-             "2. You have to response short but clean."
-
+             "2. You have to response short but clean.\n" \
+             "Follow this to use a tool: create_group => create_agent.\n"
     p_agent = PlanningAgent(
         agent_name='planning agent',
-        agent_description= "Expert Agent in planning the task & subtasks for the team.",
+        agent_description="Expert Agent in planning the task & subtasks for the team.",
         llm=OpenAiLLM(api_key=OPEN_KEY),
-        actions= {
+        actions={
             "create_group": Tool(
                 name='create_group_tool',
                 description='Create a new group in the team.',
@@ -144,14 +154,14 @@ if __name__ == "__main__":
                 func=team.create_agent
             ),
             "add_agent_to_the_group": Tool(
-                    name='add agent tool',
-                    description='Add a agent to a group.',
-                    func=team.add_agent_to_group
-                ),
+                name='add agent tool',
+                description='Add a agent to a group.',
+                func=team.add_agent_to_group
+            ),
             "add_group_to_group": Tool(
-                    name='add_group_to_group tool',
-                    description='Add a group to a group as subgroup.',
-                    func=team.add_group_to_group
+                name='add_group_to_group tool',
+                description='Add a group to a group as subgroup.',
+                func=team.add_group_to_group
             )
         },
         template=prompt
@@ -174,7 +184,8 @@ if __name__ == "__main__":
     # print(planning_group.agent_organ_graph)
 
     # print(p_agent.perception_env())
-    p_agent.run_agent("Can you help me to grade the subjective questionnaire, I have all my questionnaire in my database?")
+    p_agent.run_agent(
+        "Can you help me to grade the subjective questionnaire, I have all my questionnaire in my database?")
 
     sub_team = team.find_node_by_attribute(team.roots, 'group_name', 'Meta Group')
     print(team.mac_env.get_group_info('Meta Group', sub_team))
