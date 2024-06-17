@@ -108,17 +108,11 @@ class GroupAgentTree(Tree):
 
     def create_agent(
             self,
-            agent_name:str = None,
+            agent_name: str = None,
             llm: Type[LLMBase] = None,
-            actions: Dict[str, Tool] = {},
-            prompts: str = None,
-            *args,
-            **kwargs
+            actions: Dict[str, Tool] = None,
+            prompt: str = None,
     ) -> Tuple[bool, Union[str, 'GeneralAgent']]:
-        agent_name = kwargs.get('agent_name', None)
-        llm = kwargs.get('llm', None)
-        actions = kwargs.get('actions', {})
-        prompt = kwargs.get('prompt', None)
         if not agent_name or not llm or not prompt:
             missing_params = [param for param in ["agent_name", "llm", "prompt"] if not locals()[param]]
             return False, f"Failed to create agent because parameters {', '.join(missing_params)} are missing."
@@ -145,7 +139,7 @@ class GroupAgentTree(Tree):
             add_human_as_default=add_human_as_default
         )
         self.stray_groups[group_name] = group
-        return True, "Success to create the group."
+        return True, "Success to create an empty group, now try to create new agent or add existing agent to the group."
 
     def add_group_to_group(
             self,

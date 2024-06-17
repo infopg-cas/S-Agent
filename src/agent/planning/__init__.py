@@ -1,5 +1,7 @@
+import pprint
 from typing import Tuple, Dict, Tuple, List, Union
-from pydantic import BaseModel, create_model
+
+import json
 
 class AskIsWhatALlYouNeed:
     # Planning Class
@@ -57,7 +59,7 @@ class AskIsWhatALlYouNeed:
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
             self.agent.append_message('assistant', f"Belief {iteration}: {response}.")
             self.agent.trajectory.append(f"Belief {iteration}: {response}.")
-            return True, f"Belief: {response}."
+            return True, f"Belief {iteration}: {response}."
         except Exception as e:
             return False, f"{str(e)}"
 
@@ -78,31 +80,34 @@ class AskIsWhatALlYouNeed:
             return False, f"{str(e)}"
 
     def action(self, tool, iteration) -> Tuple[bool, str]:
+        from pydantic import BaseModel, create_model, Field
         def generate_dynamic_class(tool):
             import inspect
             parameters = inspect.signature(tool.func).parameters
 
             fields = {}
             for name, param in parameters.items():
-                if name == 'args' or name == 'kwargs':
-                    continue
-
                 if param.annotation != inspect.Parameter.empty:
                     annotation = param.annotation
                 else:
-                    annotation = str
+                    annotation = str  # default to str if no annotation is provided
 
                 default_value = param.default if param.default is not inspect.Parameter.empty else ...
-                fields[name] = (annotation, default_value)
 
-            DynamicClass = create_model(
+                # Handle arbitrary types with Field and default_factory
+                if isinstance(default_value, type):
+                    fields[name] = (annotation, Field(default_factory=lambda: default_value))
+                else:
+                    fields[name] = (annotation, default_value)
+
+            return create_model(
                 'DynamicClass',
                 **fields,
-                __config__=type('Config', (), {'arbitrary_types_allowed': True})
+                #__config__=type('Config', (), {'arbitrary_types_allowed': True})
             )
-            return DynamicClass
 
         try:
+            print(110, tool.name)
             DynamicClass = generate_dynamic_class(tool)
             format = [
                 {
@@ -110,7 +115,7 @@ class AskIsWhatALlYouNeed:
                     "description": tool.description,
                     "parameters": DynamicClass.schema()
                 }
-            ],
+            ]
             prompt = f"""
                 For Action state, you will tell me the parameters in a json format by the detail that I give you, and I will call it and give you the result. 
                 """
@@ -125,8 +130,7 @@ class AskIsWhatALlYouNeed:
 
     def observation(self, iteration) -> Tuple[bool, str]:
         try:
-            prompt = f"""Observation {iteration}:{self.agent.messages[-1]}."""
-            self.agent.append_message('user', prompt)
+            prompt = f"""Observation {iteration}:{self.agent.messages[-1].get('content')}."""
             self.agent.trajectory.append(prompt)
             return True, prompt
         except Exception as e:
@@ -147,10 +151,10 @@ class AskIsWhatALlYouNeed:
     def reflection(self, iteration) -> Tuple[bool, str]:
         try:
             prompt = "Try to do self-reflection on the answer provide above. " \
-                     "If you think the answer is correct, then just return 'Correct answer, Finish'. " \
-                     "If you think the answer is wrong or not enough to finish, just return 'Not end, do again'." \
+                     "If you think the answer is enough to finish your task, then just return 'Correct answer, Finish'. " \
+                     "If you think the answer is Not enough to finish or wrong, just return 'Not end, do again'." \
                      "If you are not sure about the answer, but willing to ask other team member to check for you, just return 'Ask for check.'" \
-                     "Don't return another answers."
+                     "Don't return an another answer."
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
             self.agent.append_message('assistant', f"Reflection {iteration}:{response}")

@@ -93,7 +93,6 @@ class OpenAiLLM(LLMBase):
             dict: The response.
         """
         try:
-            # openai.api_key = get_config("OPENAI_API_KEY")
             response = self.client.chat.completions.create(
                 n=self.number_of_results,
                 model=self.model,
@@ -159,8 +158,7 @@ class OpenAiLLM(LLMBase):
         :return:
         """
         try:
-            # openai.api_key = get_config("OPENAI_API_KEY")
-            response = openai.chat.completions.create(
+            response = self.client.chat.completions.create(
                 n=self.number_of_results,
                 model=self.model,
                 messages=messages,
