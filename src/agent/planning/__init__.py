@@ -1,5 +1,7 @@
+import pprint
 from typing import Tuple, Dict, Tuple, List, Union
-from pydantic import BaseModel, create_model
+
+import json
 
 class AskIsWhatALlYouNeed:
     # Planning Class
@@ -78,32 +80,36 @@ class AskIsWhatALlYouNeed:
             return False, f"{str(e)}"
 
     def action(self, tool, iteration) -> Tuple[bool, str]:
+        from pydantic import BaseModel, create_model, Field
         def generate_dynamic_class(tool):
             import inspect
             parameters = inspect.signature(tool.func).parameters
 
             fields = {}
             for name, param in parameters.items():
-                if name == 'args' or name == 'kwargs':
-                    continue
-
                 if param.annotation != inspect.Parameter.empty:
                     annotation = param.annotation
                 else:
-                    annotation = str
+                    annotation = str  # default to str if no annotation is provided
 
                 default_value = param.default if param.default is not inspect.Parameter.empty else ...
-                fields[name] = (annotation, default_value)
 
-            DynamicClass = create_model(
+                # Handle arbitrary types with Field and default_factory
+                if isinstance(default_value, type):
+                    fields[name] = (annotation, Field(default_factory=lambda: default_value))
+                else:
+                    fields[name] = (annotation, default_value)
+
+            return create_model(
                 'DynamicClass',
                 **fields,
                 __config__=type('Config', (), {'arbitrary_types_allowed': True})
             )
-            return DynamicClass
 
         try:
             DynamicClass = generate_dynamic_class(tool)
+            print("here")
+            print(DynamicClass.schema())
             format = [
                 {
                     "name": tool.name,
@@ -111,6 +117,7 @@ class AskIsWhatALlYouNeed:
                     "parameters": DynamicClass.schema()
                 }
             ],
+            pprint.pprint(format)
             prompt = f"""
                 For Action state, you will tell me the parameters in a json format by the detail that I give you, and I will call it and give you the result. 
                 """
