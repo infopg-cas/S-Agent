@@ -3,7 +3,7 @@ import re
 from abc import ABC
 from abc import ABC, abstractmethod
 from src.agent.agents.base import AgentBase, AgentGroupBase, EnvironmentBase, AgentTeamBase
-from src.agent.tools.base import Tool
+from src.agent.tools.base import Tool, ToolType
 from src.llms.hlevel.base import LLMBase
 from typing import Union, Any, Dict, Optional, Tuple, Type, List
 from src.utils.tree_structure import TreeNode, Tree
@@ -110,7 +110,7 @@ class GroupAgentTree(Tree):
             self,
             agent_name: str = None,
             llm: Type[LLMBase] = None,
-            actions: Dict[str, Tool] = None,
+            actions: Dict[str, ToolType] = None,
             prompt: str = None,
     ) -> Tuple[bool, Union[str, 'GeneralAgent']]:
         if not agent_name or not llm or not prompt:

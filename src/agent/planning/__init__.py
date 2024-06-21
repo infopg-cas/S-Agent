@@ -1,6 +1,6 @@
 import pprint
 from typing import Tuple, Dict, Tuple, List, Union
-
+from src.exceptions import Config
 import json
 
 class AskIsWhatALlYouNeed:
@@ -90,11 +90,10 @@ class AskIsWhatALlYouNeed:
                 if param.annotation != inspect.Parameter.empty:
                     annotation = param.annotation
                 else:
-                    annotation = str  # default to str if no annotation is provided
+                    annotation = str
 
                 default_value = param.default if param.default is not inspect.Parameter.empty else ...
 
-                # Handle arbitrary types with Field and default_factory
                 if isinstance(default_value, type):
                     fields[name] = (annotation, Field(default_factory=lambda: default_value))
                 else:
@@ -103,11 +102,10 @@ class AskIsWhatALlYouNeed:
             return create_model(
                 'DynamicClass',
                 **fields,
-                #__config__=type('Config', (), {'arbitrary_types_allowed': True})
+                __config__=Config
             )
 
         try:
-            print(110, tool.name)
             DynamicClass = generate_dynamic_class(tool)
             format = [
                 {
