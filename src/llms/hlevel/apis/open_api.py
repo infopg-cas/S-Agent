@@ -1,3 +1,5 @@
+import pprint
+
 import openai
 from openai import APIError, BadRequestError, RateLimitError, AuthenticationError, APITimeoutError
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
@@ -170,10 +172,11 @@ class OpenAiLLM(LLMBase):
                 frequency_penalty=self.frequency_penalty,
                 presence_penalty=self.presence_penalty
             )
+            pprint.pprint(response)
             if response.choices[0].finish_reason == 'function_call':
                 content = json.loads(response.choices[0].message.function_call.arguments)
             elif response.choices[0].finish_reason == 'stop':
-                content = json.loads(response.choices[0].message.content.replace("```json\n", "").replace("`", ""))
+                content = response.choices[0].message.content
             return {"response": response, "content": content}
         except RateLimitError as api_error:
             print("OpenAi RateLimitError:", api_error)

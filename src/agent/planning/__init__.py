@@ -2,6 +2,8 @@ import pprint
 from typing import Tuple, Dict, Tuple, List, Union
 from src.exceptions import Config
 import json
+import re
+
 
 class AskIsWhatALlYouNeed:
     # Planning Class
@@ -54,6 +56,7 @@ class AskIsWhatALlYouNeed:
                 If there is no other team member, which means you are the only one in the team. \n 
                 Team Info: \n
                 {team_info}
+                Belief {iteration}: 
             """
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
@@ -93,7 +96,6 @@ class AskIsWhatALlYouNeed:
                     annotation = str
 
                 default_value = param.default if param.default is not inspect.Parameter.empty else ...
-
                 if isinstance(default_value, type):
                     fields[name] = (annotation, Field(default_factory=lambda: default_value))
                 else:
@@ -111,14 +113,33 @@ class AskIsWhatALlYouNeed:
                 {
                     "name": tool.name,
                     "description": tool.description,
-                    "parameters": DynamicClass.schema()
+                    "parameters": DynamicClass.model_json_schema()
                 }
             ]
             prompt = f"""
-                For Action state, you will tell me the parameters in a json format by the detail that I give you, and I will call it and give you the result. 
+                For Action state, you will tell me the parameters in a JSON format by the detail that I give you, and I will call it and give you the result.
+                Only Return One Action state for each time. \n 
                 """
             self.agent.append_message('user', prompt)
-            response = self.agent.llm.chat_completion_json(messages=self.agent.messages, function_format=format)['content']
+            response = self.agent.llm.chat_completion_json(messages=self.agent.messages, function_format=format)[
+                'content']
+
+            if type(response) == str:
+                json_match = re.search(r"(\{.*\})", response)
+
+                if json_match:
+                    json_str = json_match.group(1)
+                    json_str = json_str.replace("'", '"')
+
+                    try:
+                        json_data = json.loads(json_str)
+                        print(json_data)
+                        response = json_data
+                    except json.JSONDecodeError as e:
+                        return False, f"{str(e)}"
+                else:
+                    return False, "No JSON found in the text."
+
             self.agent.append_message('assistant', f"Action {iteration}: {response}")
             self.agent.trajectory.append(f"Action {iteration}: {response}")
             return True, response
