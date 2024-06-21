@@ -92,7 +92,8 @@ class GroupAgentTree(Tree):
         self.mac_env: Union[None, Type[GeneralEnv()]] = GeneralEnv()
 
     def add_agent_to_group(
-            self, agent: Type[GeneralAgent],
+            self,
+            agent: Type[GeneralAgent],
             group_name: str
     ) -> Tuple[bool, str]:
         if agent.agent_name in self.stray_agents:
@@ -123,7 +124,7 @@ class GroupAgentTree(Tree):
             actions=actions,
             template=prompt)
         self.stray_agents[agent_name] = agent
-        return True, "Success to create the agent."
+        return True, "Success to create the agent, if the agent has not added to the group, add the agent to the group"
 
     def create_group(
             self,

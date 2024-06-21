@@ -58,58 +58,61 @@ class PlanningAgent(GeneralAgent):
         """
         a question as input
         """
-        tool_name = None
-        self.append_message('system', self.prompt_template + "Question: " + query + '\n')
-        n_calls, n_bad_calls = 0, 0
-        plan_record = {}
-        for key in self.planning_graph:
-            plan_record[key] = 0
+        try:
+            tool_name = None
+            self.append_message('system', self.prompt_template + "Question: " + query + '\n')
+            n_calls, n_bad_calls = 0, 0
+            plan_record = {}
+            for key in self.planning_graph:
+                plan_record[key] = 0
 
-        pointer = 'memory'
-        while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 8 and n_bad_calls < 10:
-            func = getattr(self.planning_stra, pointer)
-            args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory, tool_name=tool_name)
-            res, response = func(*args)
+            pointer = 'memory'
+            while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 8 and n_bad_calls < 10:
+                func = getattr(self.planning_stra, pointer)
+                args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory, tool_name=tool_name)
+                res, response = func(*args)
 
-            if not res:
-                n_bad_calls += 1
-                continue
-
-            # call back => for actions
-            if pointer == 'action':
-                res, payload = self.actions[tool_name].func(**response)
                 if not res:
+                    n_bad_calls += 1
                     continue
 
-                self.append_message('user', str(payload))
+                # call back => for actions
+                if pointer == 'action':
+                    res, payload = self.actions[tool_name].func(**response)
+                    if not res:
+                        continue
 
-            if pointer not in plan_record:
-                plan_record[pointer] = 1
-            else:
-                plan_record[pointer] += 1
+                    self.append_message('user', str(payload))
 
-            # detach
-            if type(self.planning_graph[pointer]) == list and len(self.planning_graph[pointer]) > 1:
-                for func, condition in self.planning_graph[pointer]:
-                    if condition in response:
-                        pointer = func
-                        if pointer == 'action':
-                            import re
-                            import json
-                            tool_name = json.loads(re.search(r'\{.*\}', response).group()).get('tool_name', '')
-                        break
-            else:
-                pointer, condition = self.planning_graph[pointer][0]
+                if pointer not in plan_record:
+                    plan_record[pointer] = 1
+                else:
+                    plan_record[pointer] += 1
 
-        if self.planning_graph[pointer] == 'SINK':
-            func = getattr(self.planning_stra, pointer)
-            res, response = func(query)
-            pprint.pprint(self.trajectory)
-        elif max(plan_record.values()) >= 8:
-            print("max iterations")
-            pprint.pprint(self.trajectory)
-        elif n_bad_calls >= 10:
-            print("max number of bad calls")
+                # detach
+                if type(self.planning_graph[pointer]) == list and len(self.planning_graph[pointer]) > 1:
+                    for func, condition in self.planning_graph[pointer]:
+                        if condition in response:
+                            pointer = func
+                            if pointer == 'action':
+                                import re
+                                import json
+                                tool_name = json.loads(re.search(r'\{.*\}', response).group()).get('tool_name', '')
+                            break
+                else:
+                    pointer, condition = self.planning_graph[pointer][0]
+
+            if self.planning_graph[pointer] == 'SINK':
+                func = getattr(self.planning_stra, pointer)
+                res, response = func(query)
+                pprint.pprint(self.trajectory)
+            elif max(plan_record.values()) >= 8:
+                print("max iterations")
+                pprint.pprint(self.trajectory)
+            elif n_bad_calls >= 10:
+                print("max number of bad calls")
+                pprint.pprint(self.trajectory)
+        except:
             pprint.pprint(self.trajectory)
 
 
@@ -153,8 +156,8 @@ if __name__ == "__main__":
                 description='Create a agent in the group.',
                 func=team.create_agent
             ),
-            "add_agent_to_the_group": Tool(
-                name='add agent tool',
+            "add_agent_to_group": Tool(
+                name='add_agent_to_group',
                 description='Add a agent to a group.',
                 func=team.add_agent_to_group
             ),

@@ -172,7 +172,6 @@ class OpenAiLLM(LLMBase):
                 frequency_penalty=self.frequency_penalty,
                 presence_penalty=self.presence_penalty
             )
-            pprint.pprint(response)
             if response.choices[0].finish_reason == 'function_call':
                 content = json.loads(response.choices[0].message.function_call.arguments)
             elif response.choices[0].finish_reason == 'stop':
