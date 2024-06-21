@@ -25,15 +25,17 @@ class ToolType:
 
     @classmethod
     def __get_pydantic_json_schema__(cls, schema: Dict[str, Any], handler):
-        field_schema = handler(schema)
-        field_schema.update(
-            type='object',
-            properties={
+        # field_schema = handler(schema)
+        # field_schema.update()
+        field_schema = {
+            'type': 'object',
+            'properties': {
                 'name': {'type': 'string'},
-                'description': {'type': 'string'}
+                'description': {'type': 'string'},
+                'func': {'type': 'string'}
             },
-            required=['name', 'description']
-        )
+            'required': ['name', 'description']
+        }
         return field_schema
 
 # Example LLMBase class
@@ -59,14 +61,9 @@ DynamicClass = create_model(
     __config__=Config
 )
 
-# Example usage of the dynamic class
-instance = DynamicClass(agent_name="Test Agent", prompt="Test Prompt")
-
 # Generate the JSON schema
 try:
     schema = DynamicClass.model_json_schema()
     print(schema)
 except PydanticUserError as exc_info:
     assert exc_info.code == 'invalid-for-json-schema'
-
-

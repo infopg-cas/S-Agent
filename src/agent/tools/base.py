@@ -25,14 +25,17 @@ class ToolType:
         if not isinstance(value, Tool):
             raise TypeError('ToolType expected')
         return value
-
     @classmethod
-    def __modify_schema__(cls, field_schema: Dict[str, Any]):
-        field_schema.update(
-            type='object',
-            properties={
+    def __get_pydantic_json_schema__(cls, schema: Dict[str, Any], handler):
+        # field_schema = handler(schema)
+        # field_schema.update()
+        field_schema = {
+            'type': 'object',
+            'properties': {
                 'name': {'type': 'string'},
-                'description': {'type': 'string'}
+                'description': {'type': 'string'},
+                'func': {'type': 'string'}
             },
-            required=['name', 'description']
-        )
+            'required': ['name', 'description', 'func']
+        }
+        return field_schema
