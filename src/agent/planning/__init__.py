@@ -84,6 +84,7 @@ class AskIsWhatALlYouNeed:
 
     def action(self, tool, iteration) -> Tuple[bool, str]:
         from pydantic import BaseModel, create_model, Field
+        print(87, tool.name)
         def generate_dynamic_class(tool):
             import inspect
             parameters = inspect.signature(tool.func).parameters
@@ -120,6 +121,9 @@ class AskIsWhatALlYouNeed:
                 For Action state, you will tell me the parameters in a JSON format by the detail that I give you, and I will call it and give you the result.
                 Only Return One Action state for each time. \n 
                 """
+            if tool.name == 'add_agent_tool':
+                pprint.pprint(format)
+
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_json(messages=self.agent.messages, function_format=format)[
                 'content']
