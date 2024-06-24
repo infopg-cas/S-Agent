@@ -31,7 +31,7 @@ class AskIsWhatALlYouNeed:
             "action": [("observation", None)],
             "ask": [("observation", None)],
             "observation": [("reflection", None)],
-            "reflection": [("belief", "again"), ("ask", "ask"), ("finish", "Correct answer, Finish")],
+            "reflection": [("think", "again"), ("ask", "ask"), ("finish", "Correct answer, Finish")],
             "finish": "SINK"
         }
         return graph
@@ -60,7 +60,6 @@ class AskIsWhatALlYouNeed:
             """
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            print(response)
             self.agent.append_message('assistant', f"Belief {iteration}: {response}.")
             self.agent.trajectory.append(f"Belief {iteration}: {response}.")
             return True, f"Belief {iteration}: {response}."
@@ -77,7 +76,6 @@ class AskIsWhatALlYouNeed:
                     """ + f"Thought {iteration}:"
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            print(response)
             self.agent.append_message('assistant', f"Thought {iteration}: {response}")
             self.agent.trajectory.append(f"Thought {iteration}: {response}")
             return True, response
@@ -127,7 +125,6 @@ class AskIsWhatALlYouNeed:
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_json(messages=self.agent.messages, function_format=format)[
                 'content']
-            print(response)
 
             if type(response) == str:
                 json_match = re.search(r"(\{.*\})", response)
@@ -156,15 +153,14 @@ class AskIsWhatALlYouNeed:
         try:
             prompt = f"""Observation {iteration}:{self.agent.messages[-1].get('content')}."""
             self.agent.trajectory.append(prompt)
-            print(prompt)
             return True, prompt
         except Exception as e:
             return False, f"{str(e)}"
 
     def ask(self, iteration) -> Tuple[bool, str]:
         try:
-            prompt = "Based on your belief of the team, generate a question or query, and choose which team member to ask." \
-                     "Give the response like [Name of the team member]:[Question]\n"
+            prompt = """Based on your belief of the team, generate a question or query, and choose which team member to ask." \
+                     "Give the response like '@[Name of the team member]:[Your Question]'\n"""
             self.agent.append_message('user', prompt + f"Ask {iteration}")
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
             self.agent.append_message('assistant', f"Ask {iteration}-" + response)
@@ -182,7 +178,6 @@ class AskIsWhatALlYouNeed:
                      "Don't return an another answer."
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            print(response)
             self.agent.append_message('assistant', f"Reflection {iteration}:{response}")
             self.agent.trajectory.append(f"Reflection {iteration}:{response}")
             return True, response

@@ -65,10 +65,11 @@ class HotpotAgent(GeneralAgent):
                 plan_record[key] = 0
 
             pointer = 'memory'
-            while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 8 and n_bad_calls < 10:
+            while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 20 and n_bad_calls < 10:
                 func = getattr(self.planning_stra, pointer)
                 args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory, tool_name=tool_name)
                 res, response = func(*args)
+                print(response)
 
                 if not res:
                     n_bad_calls += 1
@@ -79,8 +80,14 @@ class HotpotAgent(GeneralAgent):
                     res, payload = self.actions[tool_name].func(**response)
                     if not res:
                         continue
-
                     self.append_message('user', str(payload))
+
+                if type(response) == str and response[:3].lower() == 'ask':
+                    question = response.split(":")[-1]
+                    print(question)
+                    human_input = input("Provide your Response/Guidence: ")
+                    self.append_message('user', str(human_input))
+
 
                 if pointer not in plan_record:
                     plan_record[pointer] = 1

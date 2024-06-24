@@ -19,13 +19,15 @@ if __name__ == "__main__":
         description='A group of agents to solve the hotpot Q&A questions.'
     )
 
+    # "2. Name: 'lookup', which returns the next sentence containing keyword in the current passage.\n" \
+
     # 3. create an agent and add to team
     prompt = "You are a Hotpot Q&A question agent, you job is to:\n" \
              "1. Answer the question and provide the correct answer. \n" \
              "Follow the guidance by humans.\n" \
              "You have a tool library\n:" \
              "1. Name: 'search_wiki', which searches the exact entity on Wikipedia and returns the first paragraph if it exists. If not, it will return some similar entities to search.\n" \
-             "2. Name: 'lookup', which returns the next sentence containing keyword in the current passage.\n" \
+             "2. Name: 'lookup', which returns the next sentence containing keyword in the current passage.\n"\
              "Restrictions\n: " \
              "1. Do not call actions that not defined in the tool library.\n" \
              "2. You have to response short but clean.\n" \
@@ -39,7 +41,7 @@ if __name__ == "__main__":
             "search_wiki": Tool(
                 name='search_wiki',
                 description='searches the exact entity on Wikipedia returns the first paragraph if it exists. If not, it will return some similar entities to search.',
-                func=search_wiki
+                func= search_wiki
             ),
             "lookup": Tool(
                 name='loopup',
@@ -61,4 +63,4 @@ if __name__ == "__main__":
         group_name=group_name
     )
     print(msg)
-    h_agent.run_agent("Were Scott Derrickson and Ed Wood of the same nationality?")
+    h_agent.run_agent("Musician and satirist Allie Goertz wrote a song about the 'The Simpsons' character Milhouse, who Matt Groening named after who?")
