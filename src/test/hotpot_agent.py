@@ -3,7 +3,6 @@ from src.llms.hlevel import OpenAiLLM
 from src.agent.agents.hotpot_agent import HotpotAgent
 from src.agent.tools.base import Tool
 from src.agent.tools.wiki_tool import search_wiki, lookup
-import json
 
 if __name__ == "__main__":
     from Tokens import OPEN_KEY
@@ -23,7 +22,7 @@ if __name__ == "__main__":
 
     # 3. create an agent and add to team
     prompt = "You are a Hotpot Q&A question agent, you job is to:\n" \
-             "1. Answer the question and provide the correct answer. \n" \
+             "Answer the question and provide the correct answer. \n" \
              "Follow the guidance by humans.\n" \
              "You have a tool library\n:" \
              "1. Name: 'search_wiki', which searches the exact entity on Wikipedia and returns the first paragraph if it exists. If not, it will return some similar entities to search.\n" \
@@ -31,7 +30,6 @@ if __name__ == "__main__":
              "Restrictions\n: " \
              "1. Do not call actions that not defined in the tool library.\n" \
              "2. You have to response short but clean.\n" \
-             "Follow this to use a tool: create_group => create_agent.\n"
 
     h_agent = HotpotAgent(
         agent_name=agent_name,
@@ -44,7 +42,7 @@ if __name__ == "__main__":
                 func= search_wiki
             ),
             "lookup": Tool(
-                name='loopup',
+                name='lookup',
                 description='returns the next sentence containing keyword in the current passage.',
                 func=lookup
             )
