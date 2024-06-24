@@ -27,7 +27,7 @@ class AskIsWhatALlYouNeed:
         graph: Dict[str, str | List[Tuple[str, Union[str, None]]]] = {
             "memory": [("belief", None)],
             "belief": [("think", None)],
-            "think": [("action", 'I want to act'), ("ask", "I want to Ask")],
+            "think": [("action", 'I want to act'), ("ask", "I want to ask")],
             "action": [("observation", None)],
             "ask": [("observation", None)],
             "observation": [("reflection", None)],
@@ -60,6 +60,7 @@ class AskIsWhatALlYouNeed:
             """
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
+            print(response)
             self.agent.append_message('assistant', f"Belief {iteration}: {response}.")
             self.agent.trajectory.append(f"Belief {iteration}: {response}.")
             return True, f"Belief {iteration}: {response}."
@@ -71,11 +72,12 @@ class AskIsWhatALlYouNeed:
             prompt = f"""This about what to act first, if you know which tool to use to process the task, 
                     return by start with "I want to act" and then give the tool you want to ask in json key_value pair, then give a short reasoning. 
                     (Example: I want to act - {'{"tool_name": "tool_for_act"}'}) - short reasoning here.... \n
-                    If you think there is no tools for you, or you think there is gap for you to process the task, 
-                    just return 'I want to Ask'. 
+                    If you think there is no tools for you, or you think there is gap for you to process the task, or you seem unsuccessful by using the tools,  
+                    just return 'I want to ask'. 
                     """ + f"Thought {iteration}:"
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
+            print(response)
             self.agent.append_message('assistant', f"Thought {iteration}: {response}")
             self.agent.trajectory.append(f"Thought {iteration}: {response}")
             return True, response
@@ -121,12 +123,11 @@ class AskIsWhatALlYouNeed:
                 For Action state, you will tell me the parameters in a JSON format by the detail that I give you, and I will call it and give you the result.
                 Only Return One Action state for each time. \n 
                 """
-            if tool.name == 'add_agent_tool':
-                pprint.pprint(format)
 
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_json(messages=self.agent.messages, function_format=format)[
                 'content']
+            print(response)
 
             if type(response) == str:
                 json_match = re.search(r"(\{.*\})", response)
@@ -155,6 +156,7 @@ class AskIsWhatALlYouNeed:
         try:
             prompt = f"""Observation {iteration}:{self.agent.messages[-1].get('content')}."""
             self.agent.trajectory.append(prompt)
+            print(prompt)
             return True, prompt
         except Exception as e:
             return False, f"{str(e)}"
@@ -180,6 +182,7 @@ class AskIsWhatALlYouNeed:
                      "Don't return an another answer."
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
+            print(response)
             self.agent.append_message('assistant', f"Reflection {iteration}:{response}")
             self.agent.trajectory.append(f"Reflection {iteration}:{response}")
             return True, response
