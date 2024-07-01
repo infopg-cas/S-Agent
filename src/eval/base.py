@@ -1,16 +1,13 @@
 # Inspired by: https://github.com/hendrycks/test/blob/master/evaluate_flan.py
-
 import inspect
 import json
 import os
 from typing import Any, Dict, List, Optional
-
 import numpy as np
 import torch
 from datasets import load_dataset
 from tqdm import tqdm, trange
 from transformers.utils import cached_file
-
 from ..data import get_template_and_fix_tokenizer
 from ..extras.constants import CHOICES, SUBJECTS
 from ..hparams import get_eval_args
@@ -19,6 +16,7 @@ from .template import get_eval_template
 
 
 class Evaluator:
+    """Not Usable Right Now"""
     def __init__(self, args: Optional[Dict[str, Any]] = None) -> None:
         self.model_args, self.data_args, self.eval_args, fine_tuning_args = get_eval_args(args)
         self.tokenizer = load_tokenizer(self.model_args)
@@ -108,7 +106,6 @@ class Evaluator:
                 if len(category_correct)
             ]
         )
-        print(score_info)
         if self.eval_args.save_dir is not None:
             os.makedirs(self.eval_args.save_dir, exist_ok=False)
             with open(os.path.join(self.eval_args.save_dir, "results.json"), "w", encoding="utf-8", newline="\n") as f:

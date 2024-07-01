@@ -60,7 +60,7 @@ class AskIsWhatALlYouNeed:
             """
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            self.agent.append_message('assistant', f"Belief {iteration}: {response}.")
+            self.agent.append_message('assistant', f"{response}.")
             self.agent.trajectory.append(f"Belief {iteration}: {response}.")
             return True, f"Belief {iteration}: {response}."
         except Exception as e:
@@ -72,11 +72,11 @@ class AskIsWhatALlYouNeed:
                     return by start with "I want to act" and then give the tool you want to ask in json key_value pair, then give a short reasoning. 
                     (Example: I want to act - {'{"tool_name": "tool_for_act"}'}) - short reasoning here.... \n
                     If you think there is no tools for you, or you think there is gap for you to process the task, or you seem unsuccessful by using the tools,  
-                    just return 'I want to ask'. 
+                    just return 'I want to ask'\n. 
                     """ + f"Thought {iteration}:"
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            self.agent.append_message('assistant', f"Thought {iteration}: {response}")
+            self.agent.append_message('assistant', f"{response}")
             self.agent.trajectory.append(f"Thought {iteration}: {response}")
             return True, response
         except Exception as e:
@@ -84,7 +84,6 @@ class AskIsWhatALlYouNeed:
 
     def action(self, tool, iteration) -> Tuple[bool, str]:
         from pydantic import BaseModel, create_model, Field
-        print(87, tool.name)
         def generate_dynamic_class(tool):
             import inspect
             parameters = inspect.signature(tool.func).parameters
@@ -118,8 +117,9 @@ class AskIsWhatALlYouNeed:
                 }
             ]
             prompt = f"""
-                For Action state, you will tell me the parameters in a JSON format by the detail that I give you, and I will call it and give you the result.
-                Only Return One Action state for each time. \n 
+                For Action state, you will tell me the arguments in a JSON format by the detail that I give you, and I will call it and give you the result.
+                Only Return One Action state for each time and only return the arguments in one single json not nested.\n
+                Action {iteration}: 
                 """
 
             self.agent.append_message('user', prompt)
@@ -135,18 +135,16 @@ class AskIsWhatALlYouNeed:
 
                     try:
                         json_data = json.loads(json_str)
-                        print(json_data)
                         response = json_data
                     except json.JSONDecodeError as e:
                         return False, f"{str(e)}"
                 else:
                     return False, "No JSON found in the text."
 
-            self.agent.append_message('assistant', f"Action {iteration}: {response}")
+            self.agent.append_message('assistant', f"{response}")
             self.agent.trajectory.append(f"Action {iteration}: {response}")
             return True, response
         except Exception as e:
-            print(str(e))
             return False, f"{str(e)}"
 
     def observation(self, iteration) -> Tuple[bool, str]:
@@ -159,38 +157,42 @@ class AskIsWhatALlYouNeed:
 
     def ask(self, iteration) -> Tuple[bool, str]:
         try:
-            prompt = """Based on your belief of the team, generate a question or query, and choose which team member to ask." \
-                     "Give the response like '@[Name of the team member]:[Your Question]'\n"""
+            prompt = f"""Based on your belief of the team, generate a question or query, and choose which team member to ask." \
+                     "Give the response like '@[Name of the team member]:[Your Question]'\n
+                     Ask {iteration}: """
             self.agent.append_message('user', prompt + f"Ask {iteration}")
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            self.agent.append_message('assistant', f"Ask {iteration}-" + response)
-            self.agent.trajectory.append(f"Ask {iteration}" + response)
+            self.agent.append_message('assistant', response)
+            self.agent.trajectory.append(f"Ask {iteration}: " + response)
             return True, f"Ask {iteration}" + response
         except Exception as e:
             return False, f"{str(e)}"
 
     def reflection(self, iteration) -> Tuple[bool, str]:
         try:
-            prompt = "Try to do self-reflection on the answer provide above. " \
+            prompt = f"Try to do self-reflection on the answer provide above. " \
                      "If you think the answer is enough to finish your task, then just return 'Correct answer, Finish'. " \
                      "If you think the answer is Not enough to finish or wrong, just return 'Not end, do again'." \
                      "If you are not sure about the answer, but willing to ask other team member to check for you, just return 'Ask for check.'" \
-                     "Don't return an another answer."
+                     "Don't return an another answer.\n" \
+                     f"Reflection {iteration}: "
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            self.agent.append_message('assistant', f"Reflection {iteration}:{response}")
-            self.agent.trajectory.append(f"Reflection {iteration}:{response}")
+            self.agent.append_message('assistant', response)
+            self.agent.trajectory.append(f"Reflection {iteration}: {response}")
             return True, response
         except Exception as e:
             return False, f"{str(e)}"
 
     def finish(self, query) -> Tuple[bool, str]:
         try:
-            prompt = f"Based on the content, conclude your answer to the initial question {query}."
+            prompt = f"Based on the content, give your answer to the initial question {query}. " \
+                     f"Give the answer in phrase not a sentence. \n" \
+                     f"Finish Answer: "
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            self.agent.append_message('assistant', f"Finish Answer:{response}")
-            self.agent.trajectory.append(f"Finish Answer:{response}")
+            self.agent.append_message('assistant', response)
+            self.agent.trajectory.append(f"Finish Answer: {response}")
             return True, response
         except Exception as e:
             return False, str(e)
