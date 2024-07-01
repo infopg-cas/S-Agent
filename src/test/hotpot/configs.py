@@ -3,8 +3,13 @@ from src.agent.tools.wiki_tool import search_wiki, lookup
 from Tokens import OPEN_KEY
 from src.llms.hlevel import OpenAiLLM
 
-REDIS_SETTING = {
-
+REDIS_SETTINGS = {
+  'tasks': {
+    'host': '127.0.0.1',
+    'port': 19783,
+    'db': 1,
+    'password': 'test'
+  }
 }
 
 HOTPOT_LLM = OpenAiLLM(api_key=OPEN_KEY)
