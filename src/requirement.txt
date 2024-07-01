@@ -25,3 +25,4 @@ sqlalchemy==1.4.49
 pymysql==1.0.3
 alembic
 cryptography==3.4.7
+aioredis==2.0.1

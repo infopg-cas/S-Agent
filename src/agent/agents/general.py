@@ -1,21 +1,19 @@
-import math
-import re
-from abc import ABC
 from abc import ABC, abstractmethod
 from src.agent.agents.base import AgentBase, AgentGroupBase, EnvironmentBase, AgentTeamBase
 from src.agent.tools.base import Tool, ToolType
 from src.llms.hlevel.base import LLMBase
-from typing import Union, Any, Dict, Optional, Tuple, Type, List
+from typing import Union, Any, Dict, Tuple, Type, List
 from src.utils.tree_structure import TreeNode, Tree
-import pprint
 from queue import Queue
 import weakref
+from src.utils.redis_tools import RedisWrapper
 
 
 class GeneralAgent(AgentBase):
     def __init__(
             self,
             agent_name: str,
+            cache: Type[RedisWrapper],
             template: Any,
             llm: Any,
             actions: Dict = None,
@@ -27,12 +25,13 @@ class GeneralAgent(AgentBase):
         self.prompt_template = template
         self.llm = llm
         self.memory = memory
-        self.messages = []
+        self.messages = Queue()
         self.plugins_map: Dict = {}
         self.actions = actions
         self.actions_async = {}
         self.trajectory = []
         self.upper_pointer = None
+        self.cache = cache
 
     def agent_name(self) -> str:
         return self.agent_name
@@ -44,6 +43,9 @@ class GeneralAgent(AgentBase):
         return self.prompt_template
 
     def run_agent(self, query):
+        pass
+
+    def process_tasks(self, **kwargs):
         pass
 
     def process_action(self, action_name, action_parameter):
@@ -176,7 +178,8 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
 
         self.upstream_group = None
         self.downstream_group = None
-        self.agent_organ_graph: Dict[Type[GeneralAgent], List] = {}
+        self.agent_organ_graph: Dict[str, List] = {}
+        self.agent_pools: Dict[str, Type[GeneralAgent]] = {}
         self.group_pool: Dict[str: Dict] = {}
         # self.group_env: Union[None, Type[GeneralEnv()]] = GeneralEnv(group_pointer=self.group_name)
 
@@ -188,7 +191,8 @@ class GeneralAgentGroup(AgentGroupBase, ABC):
         return self.__class__(**kwargs)
 
     def add_agent(self, agent: Type[GeneralAgent]):
-        self.agent_organ_graph[agent] = []
+        self.agent_organ_graph[agent.agent_name] = []
+        self.agent_pools[agent.agent_name] = agent
         self.total_agent_numbers += 1
         self.total_staff_number += 1
         # self.group_env.update_env()
@@ -233,6 +237,7 @@ class GeneralEnv(EnvironmentBase, ABC):
         if search_group_agent:
             group_info += self.get_agent_info(
                 agent_graph=group_metadata.agent_organ_graph,
+                agent_pools=group_metadata.agent_pools,
                 current_agent_name=current_agent_name,
                 whether_human=True if group_metadata.total_user_numbers > 0 else False,
             )
@@ -244,20 +249,20 @@ class GeneralEnv(EnvironmentBase, ABC):
                 group_info += f" -Group name: {children_meta.group_name}, Description: {children_meta.group_description}\n"
         return group_info
 
-    def get_agent_info(self, agent_graph, current_agent_name, whether_human):
+    def get_agent_info(self, agent_graph, agent_pools, current_agent_name, whether_human):
         # get information through work_flow
         agent_group_info = 'Current Staffs in the group: \n'
         if whether_human:
             agent_group_info += ' - Human Staff: supervisor for the group, can take any questions. \n'
-        for agent in agent_graph.keys():
+        for agent_name in agent_graph.keys():
+            agent = agent_pools[agent_name]
             agent_group_info += f' - {agent.agent_name} {"(YOU)" if current_agent_name == agent.agent_name else ""}: {agent.description}; '
-            if len(agent_graph[agent]) > 0:
+            if len(agent_graph[agent_name]) > 0:
                 agent_group_info += f'Will send their work to {", ".join([s_agent.agent_name for s_agent in agent_graph[agent]])} when done.'
             agent_group_info += '\n'
 
         if not whether_human and agent_graph == {}:
             agent_group_info += f"No Staff in this group now, might consider to create one."
-
         return agent_group_info
 
     def get_env_info(self):
