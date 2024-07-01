@@ -1,5 +1,6 @@
 import pprint
-
+from src.test.hotpot.configs import REDIS_SETTINGS
+from src.utils.redis_tools import RedisWrapper
 from src.agent.agents.general import GeneralAgent, GeneralAgentGroup, GroupAgentTree
 from src.agent.agents.hotpot_agent import HotpotAgent
 from src.test.hotpot.configs import HOTPOT_TOOLS, HOTPOT_PROMPT, HOTPOT_LLM
@@ -19,7 +20,8 @@ def create_agent(agent_name, description, llm, prompt, tools):
         agent_description=description,
         llm=llm,
         actions=tools,
-        template=prompt
+        template=prompt,
+        cache=RedisWrapper(REDIS_SETTINGS=REDIS_SETTINGS, setting_name='tasks')
     )
     return h_agent
 

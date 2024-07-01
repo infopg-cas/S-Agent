@@ -12,7 +12,7 @@ class EvaluatePlanning:
             planning_graph,
             task_name
     ) -> Tuple[bool, str, Dict]:
-        ques, answer = question.get("q", None), question.get("a", None)
+        ques, answer = question.get("question", None), question.get("answer", None)
         if ques is None or answer is None:
             return False, "Question not Valid", {}
 
@@ -26,7 +26,7 @@ class EvaluatePlanning:
             status=0, # 0 initial, 1 in process, 2 finsh
             planning_status=planning_graph,
             pointer=pointer,
-            task=(question, answer),
+            task=(ques, answer),
             done=False,
             traj=[],
             messages=[],

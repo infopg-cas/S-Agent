@@ -64,7 +64,7 @@ class HotpotAgent(GeneralAgent):
             tool_name = None
             self.append_message('system', self.prompt_template + "Question: " + query + '\n')
 
-            for key in self.planning_graph:
+            for key in self.planning_graph.keys():
                 plan_record[key] = 0
             pointer = 'memory'
             while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 50 and n_bad_calls < 15:
@@ -129,28 +129,27 @@ class HotpotAgent(GeneralAgent):
 
     def process_task(
             self,
-            task: Dict
+            task: Dict,
+            is_update=True
     ):
         status = task.get("status", None)
         question = task['task'][0]
         if status:
             return False, "NOT CORRECT PROCESS TYPE", "Finished"
 
-        print(f"Process {task.get('id')}")
         self.messages = task.get("messages", [])
         self.trajectory = task.get("traj", [])
-        self.planning_graph = task.get("planning_status", {})
-        plan_record = task.get("planning_status", [])
+        plan_record = task.get("planning_status", {})
         pointer = task['pointer']
         n_calls, n_bad_calls = 0, 0
 
         if status == 0:
+            task['status'] = 1
             self.append_message('system', self.prompt_template + "Question: " + question + '\n')
-            for key in self.planning_graph:
+            for key in self.planning_graph.keys():
                 plan_record[key] = 0
         else:
             n_calls, n_bad_calls = task['n_calls'], task['n_bad_calls']
-
         try:
             tool_name = None
             while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 50 and n_bad_calls < 15:
@@ -175,11 +174,11 @@ class HotpotAgent(GeneralAgent):
 
                 if type(response) == str and response[:3].lower() == 'ask':
                     question = response.split(":")[-1]
+                    pointer, condition = self.planning_graph[pointer][0]
                     task['step'] += 1
                     task['msg_status'] = 1
                     task['pointer'] = pointer
                     task['planning_status'] = plan_record
-                    self.update_state(task)
                     break
 
                 if pointer not in plan_record:
@@ -204,7 +203,8 @@ class HotpotAgent(GeneralAgent):
                 task['planning_status'] = plan_record
                 task['n_calls'] = n_calls
                 task['n_bad_calls'] = n_bad_calls
-                self.update_state(task)
+                if is_update:
+                    self.update_state(task)
 
             task['pointer'] = pointer
             task['planning_status'] = plan_record
@@ -219,12 +219,12 @@ class HotpotAgent(GeneralAgent):
                     task['step'] += 1
                     task['metrics'] = EvaluatePlanning().get_metrics(task)
                     task['reward'] = EvaluatePlanning().get_reward(task)
-                    self.update_state(task)
             elif max(plan_record.values()) >= 50:
                 task['error'], task['status'] = "max iterations", 3
-                self.update_state(task)
             elif n_bad_calls >= 15:
                 task['error'], task['status'] = "max number of bad calls", 3
+
+            if is_update:
                 self.update_state(task)
 
         except Exception as e:
@@ -233,18 +233,27 @@ class HotpotAgent(GeneralAgent):
             task['status'] = 3
             task['pointer'] = pointer
             task['planning_status'] = plan_record
-            self.update_state(task)
+            if is_update:
+                self.update_state(task)
         finally:
             if task['msg_status'] == 1:
                 print("Wait for other users to response.")
             print(f"Finish process task {task['id']}, {'Done' if task['done'] else 'Not Done'}")
+            pprint.pprint(task)
 
     def update_state(self, task):
         try:
-            if task['msg_status'] == 1:
-                self.cache.list_push(f"human_process", )
             task['traj'] = self.trajectory
             task['messages'] = self.messages
-            self.cache.set(key=f"{task['task_name']}:{task['id']}", value=task)
+
+            if task['msg_status'] == 1:
+                self.cache.list_push(f"human_process", *[task], side='l')
+            elif task['done']:
+                self.cache.list_push(f"done_process", *[task], side='l')
+                self.cache.delete(f"{task['task_name']}:{task['id']}")
+            elif task['error'] is not None:
+                self.cache.list_push(f"error_process", *[task], side='l')
+            else:
+                self.cache.set(f"{task['task_name']}:{task['id']}", task)
         except:
             pass
