@@ -16,7 +16,7 @@ def init(data_set_path):
         data_list = json.load(f)
 
     data_l = []
-    for item in data_list[:1]:
+    for item in data_list[:100]:
         res, msg, task = EvaluatePlanning().reset(
             id=np.random.randint(0, 10000000),
             question=item,
@@ -95,7 +95,7 @@ def display_error():
 
 
 if __name__ == "__main__":
-    init('/data/hotpot/hotpot_train_v1_simplified.json')
+    # init('/data/hotpot/hotpot_train_v1_simplified.json')
     process_agent()
     # display_error()
 

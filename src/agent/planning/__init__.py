@@ -7,20 +7,21 @@ import re
 
 def process_response(response):
     if isinstance(response, str):
-        # Extract JSON part from the string
+        try:
+            json_data = json.loads(response)
+            return True, json_data
+        except:
+            pass
         json_match = re.search(r'(\{.*\})', response)
-        print(json_match, 12)
 
         if json_match:
             json_str = json_match.group(1)
-            print(16, json_str)
 
             # Attempt to handle single quotes in JSON by replacing them with double quotes
             try:
                 # json_str = re.sub(r'(?<!\\)\'', '"', json_str)
                 # json_str = re.sub(r'\\\'', "'", json_str)
                 # json_str = json_str.replace("'", '"', 1).replace("'", '"', 1)
-                print(21, json_str)
                 json_data = json.loads(json_str)
                 return True, json_data
             except json.JSONDecodeError as e:
@@ -86,7 +87,7 @@ class AskIsWhatALlYouNeed:
             """
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            if f"Belief {iteration}:"in response:
+            if f"Belief {iteration}:" in response:
                 response = response.split(":")[-1].strip()
 
             self.agent.append_message('assistant', f"{response}.")
@@ -105,7 +106,7 @@ class AskIsWhatALlYouNeed:
                     """ + f"Thought {iteration}:"
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            if f"Thought {iteration}:"in response:
+            if f"Thought {iteration}:" in response:
                 response = response.split(":")[-1].strip()
             self.agent.append_message('assistant', f"{response}")
             self.agent.trajectory.append(f"Thought {iteration}: {response}")
@@ -150,16 +151,14 @@ class AskIsWhatALlYouNeed:
             prompt = f"""
                 For Action state, you will tell me the arguments in a JSON format by the schema that I give you, and I will call it and give you the result.
                 Only Return One Action state for each time and only return the arguments in one single json not nested.\n
-                Only Give the Arguments for the \n
+                The JSON should be double quotes.\n
                 Action {iteration}: 
                 """
 
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_json(messages=self.agent.messages, function_format=format)[
                 'content']
-            print(128, response)
-            print(129, type(response))
-            if f"Action {iteration}:"in response:
+            if f"Action {iteration}:" in response:
                 response = response.split(":")[-1].strip()
 
             res, response = process_response(response)
@@ -167,7 +166,7 @@ class AskIsWhatALlYouNeed:
                 return False, response
             self.agent.append_message('assistant', f"{response}")
             self.agent.trajectory.append(f"Action {iteration}: {response}")
-            return True, f"Action {iteration}: {response}"
+            return True, response
         except Exception as e:
             return False, f"{str(e)}"
 
@@ -186,7 +185,7 @@ class AskIsWhatALlYouNeed:
                      Ask {iteration}: """
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            if f"Ask {iteration}:"in response:
+            if f"Ask {iteration}:" in response:
                 response = response.split(":")[-1].strip()
             self.agent.append_message('assistant', response)
             self.agent.trajectory.append(f"Ask {iteration}: " + response)
@@ -204,7 +203,7 @@ class AskIsWhatALlYouNeed:
                      f"Reflection {iteration}: "
             self.agent.append_message('user', prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            if f"Reflection {iteration}:"in response:
+            if f"Reflection {iteration}:" in response:
                 response = response.split(":")[-1].strip()
             self.agent.append_message('assistant', response)
             self.agent.trajectory.append(f"Reflection {iteration}: {response}")
@@ -219,7 +218,7 @@ class AskIsWhatALlYouNeed:
                      f"Finish Answer: "
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
-            if f"Finish Answer:"in response:
+            if f"Finish Answer:" in response:
                 response = response.split(":")[-1].strip()
             self.agent.append_message('assistant', response)
             self.agent.trajectory.append(f"Finish Answer: {response}")
@@ -228,9 +227,10 @@ class AskIsWhatALlYouNeed:
             return False, str(e)
 
 
-response = """{'entity': "Arthur's Magazine"}"""
-success, result = process_response(response)
-if success:
-    print("Parsed JSON:", result)
-else:
-    print("Error:", result)
+if __name__ == "__main__":
+    response = """{'entity': "Arthur's Magazine"}"""
+    success, result = process_response(response)
+    if success:
+        print("Parsed JSON:", result)
+    else:
+        print("Error:", result)

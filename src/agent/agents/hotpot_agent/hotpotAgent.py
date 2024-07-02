@@ -156,7 +156,6 @@ class HotpotAgent(GeneralAgent):
                 func = getattr(self.planning_stra, pointer)
                 args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory, tool_name=tool_name)
                 res, response = func(*args)
-                print(160, response)
 
                 if not res:
                     n_bad_calls += 1
