@@ -134,7 +134,7 @@ class HotpotAgent(GeneralAgent):
     ):
         status = task.get("status", None)
         question = task['task'][0]
-        if status:
+        if status is None:
             return False, "NOT CORRECT PROCESS TYPE", "Finished"
 
         self.messages = task.get("messages", [])
@@ -159,6 +159,7 @@ class HotpotAgent(GeneralAgent):
 
                 if not res:
                     n_bad_calls += 1
+                    self.messages = self.messages[0:-1]
                     continue
                 n_calls += 1
 
@@ -238,8 +239,8 @@ class HotpotAgent(GeneralAgent):
         finally:
             if task['msg_status'] == 1:
                 print("Wait for other users to response.")
-            print(f"Finish process task {task['id']}, {'Done' if task['done'] else 'Not Done'}")
-            pprint.pprint(task)
+            print(f"Finish process task {task['id']}, {'Done' if task['done'] else 'Not Finished. '}{'Error: ' + task['error'] if task['error'] else ''}")
+            # pprint.pprint(task)
 
     def update_state(self, task):
         try:

@@ -16,7 +16,7 @@ def init(data_set_path):
         data_list = json.load(f)
 
     data_l = []
-    for item in data_list[:10]:
+    for item in data_list[:100]:
         res, msg, task = EvaluatePlanning().reset(
             id=np.random.randint(0, 10000000),
             question=item,
@@ -32,6 +32,10 @@ def init(data_set_path):
 
     # append to list
     client = RedisWrapper(REDIS_SETTINGS=REDIS_SETTINGS, setting_name='tasks')
+    client.delete("agent_process")
+    client.delete("human_process")
+    client.delete("error_process")
+    client.delete("done_process")
     client.list_push("agent_process", *data_l, side='l')
     print(f"Init Success")
 
@@ -40,6 +44,7 @@ def process_agent():
     res, msg, team = single_agent()
     agent_name = 'Hotpot Agent'
     group_name = 'Hotpot Q&A'
+    count = 1
     if res:
         group = team.find_node("group_name", group_name).metadata
         if group:
@@ -48,12 +53,13 @@ def process_agent():
                 remain_process = len(agent.cache.lrange("agent_process"))
                 if remain_process == 0:
                     print("Currently No Tasks..............")
-                    time.sleep(60)
+                    time.sleep(20)
                     continue
                 else:
                     task = agent.cache.list_pop("agent_process", 'r', 1)[0]
-                    pprint.pprint(task)
+                    print(f"Question {count}", f"{task['id']}: {task['task'][0]}")
                     agent.process_task(task)
+                    count += 1
         else:
             print("no such group")
     else:
@@ -66,45 +72,30 @@ def process_message():
         remain_process = len(client.lrange("human_process"))
         if remain_process == 0:
             print("Currently No Tasks..............")
-            time.sleep(60)
+            time.sleep(20)
             continue
         else:
-            task = client.list_pop("human_process", 'r', 1)
-            print(f"Process task: {task['id']}-{task['task'][0]}")
-            traj = task['traj']
-            pprint.pprint(traj)
-            response = input("Give instruction: ")
-            task['message'].append({"role": "user", "content": response})
-            task['human_counts'] += 1
-            task['msg_status'] = 0
-            client.list_push("agent_process", *[task], side='l')
+            task = client.list_pop("human_process", 'r', 1)[0]
+            try:
+                print(f"Process task: {task['id']}-{task['task'][0]}")
+                traj = task['traj']
+                pprint.pprint(traj)
+                response = input("Give instruction: ")
+                task['messages'].append({"role": "user", "content": response})
+                task['human_counts'] += 1
+                task['msg_status'] = 0
+                client.list_push("agent_process", *[task], side='l')
+            except:
+                client.list_push("human_process", *[task], side='s')
+
+def display_error():
+    client = RedisWrapper(REDIS_SETTINGS=REDIS_SETTINGS, setting_name='tasks')
+    tasks = client.lrange("error_process")
+    pprint.pprint(tasks)
 
 
 if __name__ == "__main__":
     # init('/data/hotpot/hotpot_train_v1_simplified.json')
-    task = {'answer': None,
-             'done': False,
-             'error': None,
-             'human_counts': 0,
-             'id': 664294,
-             'messages': [],
-             'msg_status': 0,
-             'planning_name': 'AskIsALlYouNeed',
-             'planning_status': {},
-             'pointer': 'memory',
-             'status': 0,
-             'step': 0,
-             'task': ['What is the length of the track where the 2013 Liqui Moly Bathurst '
-                      '12 Hour was staged?',
-                      '6.213 km long'],
-             'task_name': 'Hotpot QA',
-             'traj': []
-    }
-    res, msg, team = single_agent()
-    agent_name = 'Hotpot Agent'
-    group_name = 'Hotpot Q&A'
-    if res:
-        group = team.find_node("group_name", group_name).metadata
-        if group:
-            agent = group.agent_pools[agent_name]
-            agent.process_task(task, False)
+    process_agent()
+    # display_error()
+

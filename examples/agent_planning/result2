@@ -1,18 +1,3 @@
-from src.agent.tools.base import Tool
-from src.agent.tools.wiki_tool import search_wiki, lookup
-from Tokens import OPEN_KEY
-from src.llms.hlevel import OpenAiLLM
-
-REDIS_SETTINGS = {
-  'tasks': {
-    'host': '127.0.0.1',
-    'port': 19783,
-    'db': 1,
-    'password': 'test'
-  }
-}
-
-HOTPOT_EXAMPLE = """
 Belief 1: As the only agent in the Hotpot Q&A group, my task is to answer the question about who the 'The Simpsons' character Milhouse was named after by Matt Groening. Currently, there is no progress on this task as I have not yet used any tools to find the answer. The supervisor is available for any questions. I am equipped to handle this task due to my ability to use the 'search_wiki' and 'lookup' tools from the tool library..
 I want to act - {"tool_name": "search_wiki", "entity": "Milhouse"} - I believe the Wikipedia page for the character Milhouse from 'The Simpsons' will have information on who Matt Groening named the character after.
 Action 1: {'entity': 'Milhouse'}
@@ -36,32 +21,3 @@ Action 5: {'keyword': 'named after'}
 Observation 9:(Result 1 / 1) [6][7] Milhouse was named after U.S. president Richard Milhous Nixon..
 Reflection 9: Correct answer, Finish.
 Finish Answer: president Richard Milhous Nixon.
-"""
-
-HOTPOT_LLM = OpenAiLLM(api_key=OPEN_KEY,model='gpt-3.5-turbo', temperature=0.05)
-
-HOTPOT_PROMPT = f"""You are a Hotpot Q&A question agent, you job is to:\n 
-             Answer the question and provide the correct answer. \n
-             You have a tool library\n:" 
-             1. Name: 'search_wiki', which searches the exact entity on Wikipedia and returns the first paragraph if it exists. If not, it will return some similar entities to search.\n
-             2. Name: 'lookup', which returns the next sentence containing keyword in the current passage.\n 
-             Restrictions\n:
-             1. Do not call actions that not defined in the tool library.\n 
-             2. You have to response short but clean.\n
-             Example:\n
-             {HOTPOT_EXAMPLE}\n
-             """
-
-
-HOTPOT_TOOLS = {
-    "search_wiki": Tool(
-        name='search_wiki',
-        description='searches the exact entity on Wikipedia returns the first paragraph if it exists. If not, it will return some similar entities to search.',
-        func=search_wiki
-    ),
-    "lookup": Tool(
-        name='lookup',
-        description='returns the next sentence containing keyword in the current passage.',
-        func=lookup
-    )
-}

@@ -24,7 +24,7 @@ def get_page_obs(page):
     return ' '.join(sentences[:5])
 
 
-def search_wiki(entity: str):
+def search_wiki(entity: str, **kwargs):
     global PAGE_INFO, LOOKUP_KEYWORD, LOOKUP_LIST, LOOKUP_CNT
     entity_ = entity.replace(" ", "+")
     search_url = f"https://en.wikipedia.org/w/index.php?search={entity_}"
@@ -51,7 +51,7 @@ def search_wiki(entity: str):
             # return True, f"Find the page that contains the entity '{entity}' that store in local now, there are multiple sentences. Try to use loop up tool to find keyword that you want in the page."
 
 
-def lookup(keyword):
+def lookup(keyword, **kwargs):
     global LOOKUP_CNT, LOOKUP_LIST, LOOKUP_KEYWORD
     if LOOKUP_KEYWORD != keyword:
         LOOKUP_KEYWORD = keyword
