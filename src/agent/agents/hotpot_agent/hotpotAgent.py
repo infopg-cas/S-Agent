@@ -134,7 +134,7 @@ class HotpotAgent(GeneralAgent):
     ):
         status = task.get("status", None)
         question = task['task'][0]
-        if status:
+        if status is None:
             return False, "NOT CORRECT PROCESS TYPE", "Finished"
 
         self.messages = task.get("messages", [])
@@ -156,9 +156,11 @@ class HotpotAgent(GeneralAgent):
                 func = getattr(self.planning_stra, pointer)
                 args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory, tool_name=tool_name)
                 res, response = func(*args)
+                print(160, response)
 
                 if not res:
                     n_bad_calls += 1
+                    self.messages = self.messages[0:-1]
                     continue
                 n_calls += 1
 
@@ -238,8 +240,8 @@ class HotpotAgent(GeneralAgent):
         finally:
             if task['msg_status'] == 1:
                 print("Wait for other users to response.")
-            print(f"Finish process task {task['id']}, {'Done' if task['done'] else 'Not Done'}")
-            pprint.pprint(task)
+            print(f"Finish process task {task['id']}, {'Done' if task['done'] else 'Not Finished. '}{'Error: ' + task['error'] if task['error'] else ''}")
+            # pprint.pprint(task)
 
     def update_state(self, task):
         try:
