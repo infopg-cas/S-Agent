@@ -1,8 +1,10 @@
+import json
+
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_random_exponential
 from src.llms.hlevel.base import LLMBase
 from typing import Dict, Any, Union, Optional, Sequence, Literal
-from ollama import Client
-from ollama._types import Message, Options, RequestError, ResponseError
+from ollama import Client, AsyncClient
+from ollama._types import Message, Options, RequestError, ResponseError, Tool
 
 MAX_RETRY_ATTEMPTS = 5
 MIN_WAIT = 30  # Seconds
@@ -68,7 +70,7 @@ class OllamaLLM(LLMBase):
             **kwargs: Any
     ) -> Dict:
         """
-        Call the OpenAI chat completion API.
+        Call the Ollama chat completion API.
 
         Args:
             messages (list): The messages.
@@ -87,10 +89,9 @@ class OllamaLLM(LLMBase):
                 model=self.model,
                 messages=messages,
                 options=options,
-                format=format,
                 keep_alive=keep_alive
             )
-            content = response.get('message')
+            content = response.get('message', {}).get("content", "")
             return {"response": response, "content": content}
         except Exception as exception:
             return {"error": "OLLAMA_CALLING_ERROR", "message": "OLLAMA_CALLING_EXCEPTION: " + str(exception)}
@@ -104,7 +105,7 @@ class OllamaLLM(LLMBase):
             **kwargs: Any
     ):
         """
-        Call the OpenAI chat completion API.
+        Call the Ollama chat completion API.
         Args:
             messages (list): The messages.
             max_tokens (int): The maximum number of tokens.
@@ -138,6 +139,7 @@ class OllamaLLM(LLMBase):
     )
     def chat_completion_json(
             self,
+            function_format: Optional[Sequence[Tool]],
             messages: Optional[Sequence[Message]] = None,
             format: Literal['', 'json'] = 'json',
             options: Optional[Options] = None,
@@ -153,11 +155,19 @@ class OllamaLLM(LLMBase):
         :param prompt:
         :return:
         """
-        return self.chat_completion_text(
-            messages=messages,
-            format='json',
-            options=options,
-            keep_alive=keep_alive)
+        try:
+            response = self.client.chat(
+                model=self.model,
+                messages=messages,
+                options=options,
+                tools=function_format,
+                format='json',
+                keep_alive=keep_alive
+            )
+            content = response.get('message', {}).get('content',"")
+            return {"response": response, "content": content}
+        except Exception as exception:
+            return {"error": "OLLAMA_CALLING_ERROR", "message": "OLLAMA_CALLING_EXCEPTION: " + str(exception)}
 
     def get_api_key(self):
         """
@@ -192,8 +202,36 @@ if __name__ == "__main__":
         ollama_host="http://gcn008.csns.ihep.ac.cn",
         ollama_port=60000,
     )
-    pprint.pprint(llm.chat_completion_json(
-        messages=[{
+    schema = {
+        'company': {
+            "type": "string",
+            "description": "Name of company"
+        },
+        'ticker':{
+            "type": "string",
+            "description": "Ticker symbol of the company"
+        }
+    }
+    messages=[
+        {
+            "role":"system",
+            "content": f"You are a helpful AI assistant, The user will enter a company name, and the assistant will return the ticker symbol."
+        },
+        # {
+        #     "role":"user",
+        #     "content": "Apple"
+        # },
+        # {
+        #     "role":"assistant",
+        #     "content": json.dumps({"company":"Apple", "ticker": "AAPL"})
+        # },
+        {
             'role': 'user',
-            'content': 'Why is the sky blue?'}]
+            'content': 'Tesla'
+        }
+
+    ]
+    pprint.pprint(llm.chat_completion_json(
+        messages=messages,
+        function_format=schema
     ))

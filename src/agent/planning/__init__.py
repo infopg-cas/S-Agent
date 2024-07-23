@@ -54,7 +54,7 @@ class AskIsWhatALlYouNeed:
         graph: Dict[str, str | List[Tuple[str, Union[str, None]]]] = {
             "memory": [("belief", None)],
             "belief": [("think", None)],
-            "think": [("action", 'I want to act'), ("ask", "I want to ask")],
+            "think": [("action", 'want to act'), ("ask", "want to ask")],
             "action": [("observation", None)],
             "ask": [("observation", None)],
             "observation": [("reflection", None)],

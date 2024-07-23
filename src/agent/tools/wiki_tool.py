@@ -85,3 +85,4 @@ def construct_lookup_list(keyword):
     sentences = sent_tokenize(PAGE_INFO)
     parts = [sentence for sentence in sentences if keyword.lower() in sentence.lower()]
     return parts
+

@@ -1,5 +1,5 @@
 Belief 1: As the only agent in the Hotpot Q&A group, my task is to answer the question about who the 'The Simpsons' character Milhouse was named after by Matt Groening. Currently, there is no progress on this task as I have not yet used any tools to find the answer. The supervisor is available for any questions. I am equipped to handle this task due to my ability to use the 'search_wiki' and 'lookup' tools from the tool library..
-I want to act - {"tool_name": "search_wiki", "entity": "Milhouse"} - I believe the Wikipedia page for the character Milhouse from 'The Simpsons' will have information on who Matt Groening named the character after.
+Thought 1: I want to act - {"tool_name": "search_wiki", "entity": "Milhouse"} - I believe the Wikipedia page for the character Milhouse from 'The Simpsons' will have information on who Matt Groening named the character after.
 Action 1: {'entity': 'Milhouse'}
 Observation 1: Milhouse Mussolini Van Houten[1] is a recurring character in the Fox animated television series The Simpsons voiced by Pamela Hayden and created by Matt Groening. Milhouse is Bart Simpson's best friend in Mrs. Krabappel's fourth grade class at Springfield Elementary School. He is insecure, gullible, and is often led into trouble by Bart, who takes advantage of his friend's naïveté. Milhouse is a regular target for school bully Nelson Muntz and his friends Jimbo Jones, Dolph Starbeam and Kearney Zzyzwicz..
 Reflection 1: Not end, do again.
@@ -12,12 +12,12 @@ Ask 1 @supervisor: I have tried to find the information using the 'search_wiki' 
  I have tried to find the information using the 'search_wiki' tool on both 'Milhouse' and 'Matt Groening' but did not find the answer to the question. Can you guide me on how to proceed?
 Observation 3: Search for Milhouse and try to use look up tool to look up some keywords.
 Reflection 3: Not end, do again.
-Thought 4: Thought 8: I want to act - {"tool_name": "search_wiki", "entity": "Milhouse"} - The supervisor suggested to search for 'Milhouse' again on Wikipedia and then use the 'lookup' tool. I will start with the 'search_wiki' tool.
+Thought 4: I want to act - {"tool_name": "search_wiki", "entity": "Milhouse"} - The supervisor suggested to search for 'Milhouse' again on Wikipedia and then use the 'lookup' tool. I will start with the 'search_wiki' tool.
 Action 4: {'entity': 'Milhouse'}
 Observation 4: Milhouse Mussolini Van Houten[1] is a recurring character in the Fox animated television series The Simpsons voiced by Pamela Hayden and created by Matt Groening. Milhouse is Bart Simpson's best friend in Mrs. Krabappel's fourth grade class at Springfield Elementary School. He is insecure, gullible, and is often led into trouble by Bart, who takes advantage of his friend's naïveté. Milhouse is a regular target for school bully Nelson Muntz and his friends Jimbo Jones, Dolph Starbeam and Kearney Zzyzwicz..
 Reflection 4: Not end, do again.
 Thought 5: I want to act - {"tool_name": "lookup", "keyword": "named after"} - Now that I have the 'Milhouse' page from Wikipedia, I will use the 'lookup' tool with the keyword 'named after' as suggested by the supervisor.
 Action 5: {'keyword': 'named after'}
-Observation 9:(Result 1 / 1) [6][7] Milhouse was named after U.S. president Richard Milhous Nixon..
-Reflection 9: Correct answer, Finish.
+Observation 5: (Result 1 / 1) [6][7] Milhouse was named after U.S. president Richard Milhous Nixon..
+Reflection 5: Correct answer, Finish.
 Finish Answer: president Richard Milhous Nixon.

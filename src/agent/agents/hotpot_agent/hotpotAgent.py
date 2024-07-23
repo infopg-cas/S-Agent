@@ -152,10 +152,11 @@ class HotpotAgent(GeneralAgent):
             n_calls, n_bad_calls = task['n_calls'], task['n_bad_calls']
         try:
             tool_name = None
-            while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 50 and n_bad_calls < 15:
+            while self.planning_graph[pointer] != 'SINK' and max(plan_record.values()) < 10 and n_bad_calls < 15:
                 func = getattr(self.planning_stra, pointer)
                 args = self.get_nodes_args(pointer, plan_record=plan_record, memory=self.memory, tool_name=tool_name)
                 res, response = func(*args)
+                print(159, response, pointer)
 
                 if not res:
                     n_bad_calls += 1
@@ -168,9 +169,11 @@ class HotpotAgent(GeneralAgent):
                     try:
                         res, payload = self.actions[tool_name].func(**response)
                         if not res:
+                            n_bad_calls += 1
                             continue
                         self.append_message('user', str(payload))
                     except:
+                        n_bad_calls += 1
                         continue
 
                 if type(response) == str and response[:3].lower() == 'ask':
@@ -190,12 +193,19 @@ class HotpotAgent(GeneralAgent):
                     # detach
                 if type(self.planning_graph[pointer]) == list and len(self.planning_graph[pointer]) > 1:
                     for func, condition in self.planning_graph[pointer]:
-                        if condition in response:
+                        if condition in response.lower():
                             pointer = func
                             if pointer == 'action':
                                 tool_name = json.loads(re.search(r'\{.*\}', response).group()).get('tool_name', '')
+                                if tool_name == "":
+                                    dict = json.loads(re.search(r'\{.*\}', response).group())
+                                    if "action" in dict:
+                                        tool_name = dict['action']
+                                    elif "action_tool_name" in dict:
+                                        tool_name = dict['action_tool_name']
+                                    elif "action_name" in dict:
+                                        tool_name = dict['action_name']
                             break
-
                 else:
                     pointer, condition = self.planning_graph[pointer][0]
 
