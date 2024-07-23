@@ -41,3 +41,11 @@ def f1_score(prediction, ground_truth):
     recall = 1.0 * num_same / len(ground_truth_tokens)
     f1 = (2 * precision * recall) / (precision + recall)
     return f1, precision, recall
+
+
+pred = normalize_answer("Monticello was the primary plantation of Thomas Jefferson.")
+gt = normalize_answer("Edmund Bacon")
+em = (pred == gt)
+f1 = f1_score(pred, gt)[0]
+print(f1, em)
+

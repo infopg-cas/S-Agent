@@ -46,7 +46,7 @@ class EvaluatePlanning:
     def get_metrics(self, info):
         if info['answer'] is not None:
             pred = normalize_answer(info['answer'])
-            gt = normalize_answer(info['answer'])
+            gt = normalize_answer(info['task'][1])
             em = (pred == gt)
             f1 = f1_score(pred, gt)[0]
             return {'reward': em, 'em': em, 'f1': f1}
