@@ -1,7 +1,7 @@
 from src.agent.tools.base import Tool
 from src.agent.tools.wiki_tool import search_wiki, lookup
 from Tokens import OPEN_KEY
-from src.llms.hlevel import OpenAiLLM
+from src.llms.hlevel import OpenAiLLM, OllamaLLM
 
 REDIS_SETTINGS = {
   'tasks': {
@@ -38,7 +38,8 @@ Reflection 9: Correct answer, Finish.
 Finish Answer: president Richard Milhous Nixon.
 """
 
-HOTPOT_LLM = OpenAiLLM(api_key=OPEN_KEY,model='gpt-3.5-turbo', temperature=0.05)
+HOTPOT_LLM = OpenAiLLM(api_key=OPEN_KEY,model='gpt-4o', temperature=0.05)
+# HOTPOT_LLM = OllamaLLM(model='llama2',ollama_host="http://gcn008.csns.ihep.ac.cn",ollama_port=60000, temperature=0.05)
 
 HOTPOT_PROMPT = f"""You are a Hotpot Q&A question agent, you job is to:\n 
              Answer the question and provide the correct answer. \n

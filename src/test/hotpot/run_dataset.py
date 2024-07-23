@@ -1,5 +1,4 @@
 import pprint
-
 from src.test.hotpot.hotpot_agent import single_agent
 from src.test.hotpot.configs import REDIS_SETTINGS
 from src.eval.eval_plannings import EvaluatePlanning
@@ -16,7 +15,7 @@ def init(data_set_path):
         data_list = json.load(f)
 
     data_l = []
-    for item in data_list[:100]:
+    for item in data_list[:1]:
         res, msg, task = EvaluatePlanning().reset(
             id=np.random.randint(0, 10000000),
             question=item,
@@ -34,8 +33,8 @@ def init(data_set_path):
     client = RedisWrapper(REDIS_SETTINGS=REDIS_SETTINGS, setting_name='tasks')
     client.delete("agent_process")
     client.delete("human_process")
-    client.delete("error_process")
-    client.delete("done_process")
+    # client.delete("error_process")
+    # client.delete("done_process")
     client.list_push("agent_process", *data_l, side='l')
     print(f"Init Success")
 
@@ -58,6 +57,7 @@ def process_agent():
                 else:
                     task = agent.cache.list_pop("agent_process", 'r', 1)[0]
                     print(f"Question {count}", f"{task['id']}: {task['task'][0]}")
+                    pprint.pprint(task)
                     agent.process_task(task)
                     count += 1
         else:
@@ -90,12 +90,11 @@ def process_message():
 
 def display_error():
     client = RedisWrapper(REDIS_SETTINGS=REDIS_SETTINGS, setting_name='tasks')
-    tasks = client.lrange("error_process")
+    tasks = client.lrange("done_process")
     pprint.pprint(tasks)
 
 
 if __name__ == "__main__":
-    # init('/data/hotpot/hotpot_train_v1_simplified.json')
+    init('/data/hotpot/hotpot_train_v1_simplified.json')
     process_agent()
-    # display_error()
 
