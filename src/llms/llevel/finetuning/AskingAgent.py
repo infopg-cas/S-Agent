@@ -100,7 +100,6 @@ class AskingAgent(torch.nn.Module):
             observation = [self.template.replace("{obs}", obs) for obs in observation]
         obs_ids = self.tokenizer(observation, return_tensors='pt', padding=True, max_length=512, truncation=True).to(
             self.device)
-        print(103, obs_ids)
 
         context_len = obs_ids['attention_mask'].size(1)
         outputs = self.accelerator.unwrap_model(self.model).generate(
@@ -111,12 +110,9 @@ class AskingAgent(torch.nn.Module):
             pad_token_id=self.tokenizer.eos_token_id
         ).cpu()
         outputs = outputs[:, context_len:]
-        print(114, outputs)
         raw_action = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
         for _ in range(3):
             raw_action = [a[1:] if a.startswith('\n') else a for a in raw_action]
-
-        print(119, raw_action)
 
         # return raw_action
         if self.eos_str is not None:
