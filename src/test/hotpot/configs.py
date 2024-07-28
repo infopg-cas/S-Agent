@@ -38,7 +38,7 @@ Reflection 9: Correct answer, Finish.
 Finish Answer: president Richard Milhous Nixon.
 """
 
-HOTPOT_LLM = OpenAiLLM(api_key=OPEN_KEY,model='gpt-4o', temperature=0.05)
+HOTPOT_LLM = OpenAiLLM(api_key=OPEN_KEY,model='gpt-3.5-turbo', temperature=0)
 # HOTPOT_LLM = OllamaLLM(model='llama2',ollama_host="http://gcn008.csns.ihep.ac.cn",ollama_port=60000, temperature=0.05)
 
 HOTPOT_PROMPT = f"""You are a Hotpot Q&A question agent, you job is to:\n 
