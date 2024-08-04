@@ -1,4 +1,4 @@
-import pprint
+import random
 from typing import Tuple, Dict, Tuple, List, Union
 from src.exceptions import Config
 import json
@@ -47,11 +47,14 @@ class AskIsWhatALlYouNeed:
     # 6. Self-Reflection
     # 7. Ask
 
-    def __init__(self, agent):
+    def __init__(self, agent, action_space, task):
         self.agent = agent
+        self.action_space = action_space
+        self.task = task  # hotpot, alfworld
 
     def get_planning_graph(self):
-        graph: Dict[str, str | List[Tuple[str, Union[str, None]]]] = {
+        # [str, str | List[Tuple[str, Union[str, None]]]]
+        graph: Dict = {
             "memory": [("belief", None)],
             "belief": [("think", None)],
             "think": [("action", 'want to act'), ("ask", "want to ask")],
@@ -98,23 +101,32 @@ class AskIsWhatALlYouNeed:
 
     def think(self, iteration) -> Tuple[bool, str]:
         try:
-            prompt = f"""This about what to act first, if you know which tool to use to process the task, 
-                    return by start with "I want to act" and then give the tool you want to ask in json key_value pair, then give a short reasoning. 
-                    (Example: I want to act - {'{"tool_name": "action_tool_name"}'}) - short reasoning here.... \n
-                    If you think there is no tools for you, or you think there is gap for you to process the task, or you seem unsuccessful by using the tools,  
-                    just return 'I want to ask'\n. 
-                    """ + f"Thought {iteration}:"
+            if self.task == "alfworld":
+                prompt = f"""This about what to act first, if you know how to process the task, 
+                        return by start with "I want to act" and then give the action from the action space: [{",".join(self.action_space)}], then give a short reasoning.
+                        (Example: I want to act - <<one action from action space>> - short reasoning here.... Action you gave should EXACT MATCH with item in the action space\n
+                        If you think there is no action you can take, or you think there is gap for you to process the task, or you seem unsuccessful by using the action,  
+                        just return 'I want to ask'\n. 
+                        """ + f"Thought {iteration}:"
+            else:
+                prompt = f"""This about what to act first, if you know which tool to use to process the task, 
+                        return by start with "I want to act" and then give the tool you want to use in json key_value pair, then give a short reasoning. 
+                        (Example: I want to act - {'{"tool_name": "action_tool_name"}'}) - short reasoning here.... \n
+                        If you think there is no tools for you, or you think there is gap for you to process the task, or you seem unsuccessful by using the tools,  
+                        just return 'I want to ask'\n. 
+                        """ + f"Thought {iteration}:"
             self.agent.append_message("user", prompt)
             response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
             if f"Thought {iteration}:" in response:
                 response = response.split(":")[-1].strip()
-            self.agent.append_message('assistant', f"{response}")
+            reasoning = response.split("-")[-1]
+            self.agent.append_message('assistant', f"{reasoning}")
             self.agent.trajectory.append(f"Thought {iteration}: {response}")
             return True, f"Thought {iteration}: {response}"
         except Exception as e:
             return False, f"{str(e)}"
 
-    def action(self, tool, iteration) -> Tuple[bool, str]:
+    def action(self, iteration, tool=None, action=None) -> Tuple[bool, str]:
         from pydantic import BaseModel, create_model, Field
         def generate_dynamic_class(tool):
             import inspect
@@ -140,39 +152,63 @@ class AskIsWhatALlYouNeed:
             )
 
         try:
-            DynamicClass = generate_dynamic_class(tool)
-            format = [
-                {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": DynamicClass.model_json_schema()
-                }
-            ]
-            prompt = f"""
-                For Action state, you will tell me the arguments in a JSON format by the schema that I give you, and I will call it and give you the result.
-                Only Return One Action state for each time and only return the arguments in one single json not nested.\n
-                The JSON should be double quotes.\n
-                Action {iteration}: 
-                """
+            if tool:
+                DynamicClass = generate_dynamic_class(tool)
+                format = [
+                    {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": DynamicClass.model_json_schema()
+                    }
+                ]
+                prompt = f"""
+                    For Action state, you will tell me the arguments in a JSON format by the schema that I give you, and I will call it and give you the result.
+                    Only Return One Action state for each time and only return the arguments in one single json not nested.\n
+                    The JSON should be double quotes.\n
+                    Action {iteration}: 
+                    """
 
-            self.agent.append_message('user', prompt)
-            response = self.agent.llm.chat_completion_json(messages=self.agent.messages, function_format=format)[
-                'content']
-            if f"Action {iteration}:" in response:
-                response = response.split(":")[-1].strip()
+                self.agent.append_message('user', prompt)
+                response = self.agent.llm.chat_completion_json(messages=self.agent.messages, function_format=format)['content']
+                if f"Action {iteration}:" in response:
+                    response = response.split(":")[-1].strip()
+                res, response = process_response(response)
+                if not res:
+                    return False, response
+                self.agent.append_message('assistant', f"{response}")
+                self.agent.trajectory.append(f"Action {iteration}: {response}")
+                return True, response
+            elif action:
+                if len(action) > max([len(x) for x in self.action_space]):
+                    for i in self.action_space:
+                        if i in action:
+                            action = i
+                            break
+                elif action not in self.action_space:
+                    action = random.choices(self.action_space)
+                prompt = f"""For Action state, you will tell me the detail of the how you will act.\n
+                Ignore the instruction in the previous step. Only return the action content.
+                Example:\n
+                Input: put; 
+                Your response shoule be like: tomato in the microwave
+                Action {iteration}: {action} """
 
-            res, response = process_response(response)
-            if not res:
-                return False, response
-            self.agent.append_message('assistant', f"{response}")
-            self.agent.trajectory.append(f"Action {iteration}: {response}")
-            return True, response
+                self.agent.append_message('user', prompt)
+                response = self.agent.llm.chat_completion_text(messages=self.agent.messages, max_tokens=15)['content']
+                if f"Action {iteration}:" in response:
+                    response = response.split(":")[-1].strip()
+                if action in response:
+                    response = response.replace(action, "")
+
+                self.agent.append_message('assistant', f"{response}")
+                self.agent.trajectory.append(f"Action {iteration}: {action} {response}")
+                return True, f"{action} {response}"
         except Exception as e:
             return False, f"{str(e)}"
 
     def observation(self, iteration) -> Tuple[bool, str]:
         try:
-            prompt = f"""Observation {iteration}: {self.agent.messages[-1].get('content')}."""
+            prompt = f"""Observation {iteration}: {self.agent.messages[-1].get('content')}"""
             self.agent.trajectory.append(prompt)
             return True, prompt
         except Exception as e:
@@ -211,13 +247,17 @@ class AskIsWhatALlYouNeed:
         except Exception as e:
             return False, f"{str(e)}"
 
-    def finish(self, query) -> Tuple[bool, str]:
+    def finish(self, query=None) -> Tuple[bool, str]:
         try:
-            prompt = f"Based on the content, give your answer to the initial question {query}. " \
-                     f"Give the answer in phrase not a sentence. \n" \
-                     f"Finish Answer: "
+            if self.task == "alfworld":
+                prompt = f"Based on the content, give a short summary to this task. " \
+                         f"Finish Answer: "
+            else:
+                prompt = f"Based on the content, give your answer to the initial question {query}. " \
+                         f"Give the answer in phrase not a sentence. \n" \
+                         f"Finish Answer: "
             self.agent.append_message("user", prompt)
-            response = self.agent.llm.chat_completion_text(messages=self.agent.messages)['content']
+            response = self.agent.llm.chat_completion_text(messages=self.agent.messages, max_tokens=100)['content']
             if f"Finish Answer:" in response:
                 response = response.split(":")[-1].strip()
             self.agent.append_message('assistant', response)

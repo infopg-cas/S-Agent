@@ -3,6 +3,7 @@ import getpass
 
 USERNAME = getpass.getuser()
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 def abspath(*path):
     """
     return absolute path from ROOT_DIR
