@@ -184,7 +184,7 @@ tiktoken==0.6.0
 tokenizers==0.19.1
 tomli==2.0.1
 torch==2.2.2
-tqdm==4.66.2
+tqdm==4.66.3
 transformers==4.43.3
 trl==0.8.6
 typer==0.9.4
