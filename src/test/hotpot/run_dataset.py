@@ -10,6 +10,34 @@ from src.utils import ROOT_DIR
 from src.utils.redis_tools import RedisWrapper
 
 
+selected_data = ROOT_DIR + '/data/hotpot/selected_indices.json'
+
+def run():
+    res, msg, team = single_agent()
+    agent_name = 'Hotpot Agent'
+    group_name = 'Hotpot Q&A'
+    count = 1
+    if res:
+        group = team.find_node("group_name", group_name).metadata
+        if group:
+            agent = group.agent_pools[agent_name]
+            while True:
+                remain_process = len(agent.cache.lrange("agent_process"))
+                if remain_process == 0:
+                    print("Currently No Tasks..............")
+                    time.sleep(20)
+                    continue
+                else:
+                    task = agent.cache.list_pop("agent_process", 'r', 1)[0]
+                    print(f"Question {count}", f"{task['id']}: {task['task'][0]}")
+                    pprint.pprint(task)
+                    agent.run(task)
+                    count += 1
+        else:
+            print("no such group")
+    else:
+        print(msg)
+
 def init(data_set_path):
     with open(ROOT_DIR + data_set_path, 'r') as f:
         data_list = json.load(f)
@@ -94,7 +122,11 @@ def display_error():
     pprint.pprint(tasks)
 
 
+# if __name__ == "__main__":
+#     init('/data/hotpot/hotpot_train_v1_simplified.json')
+#     process_agent()
+
+
 if __name__ == "__main__":
-    init('/data/hotpot/hotpot_train_v1_simplified.json')
-    process_agent()
+    run()
 
