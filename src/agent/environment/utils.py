@@ -43,7 +43,6 @@ def take_action(
 
 def batch_interact_environment(
         agent,
-        tokenizer,
         env,
         num_trajectories,
         post_f=lambda x: x,
@@ -59,7 +58,6 @@ def batch_interact_environment(
     bsize = env.bsize
     all_trajectories = []
     for num_t in tqdm(range(num_trajectories // bsize), disable=not use_tqdm):
-        print(">>>>>>>>", num_t)
         done = False
         trajectories = [[] for _ in range(bsize)]
         batch_obs = env.reset(idx=env_idx)
@@ -67,9 +65,7 @@ def batch_interact_environment(
         steps = 0
         while not all(batch_done):
             steps += 1
-            # print(f"Environment stpes {str(steps)}")
             action = agent.get_action(batch_obs)
-            print(action)
             batch_return = env.step(decode_f(action))
             for i, result in zip(range(bsize), batch_return):
                 if result is None:
@@ -80,12 +76,10 @@ def batch_interact_environment(
                     "next_observation": next_obs,
                     "reward": r,
                     "done": done,
-                    "action": action[i]}
-                )
+                    "action": action[i]
+                })
                 batch_obs[i] = next_obs
                 batch_done[i] = done
 
-        print(trajectories[0][-1]["next_observation"])
-        all_trajectories += [post_f(add_mc_return(add_trajectory_reward(trajectory))) \
-                             for trajectory in trajectories]
+        all_trajectories += [post_f(add_mc_return(add_trajectory_reward(trajectory))) for trajectory in trajectories]
     return all_trajectories

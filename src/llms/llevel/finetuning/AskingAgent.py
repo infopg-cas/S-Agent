@@ -1,7 +1,7 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from typing import Tuple
-from src.llms.llevel.algorithms.critic import DoubleCritic
+from src.algorithms.critic import DoubleCritic
 
 
 class AskingAgent(torch.nn.Module):

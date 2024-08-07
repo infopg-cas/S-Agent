@@ -31,7 +31,7 @@ def run():
                     task = agent.cache.list_pop("agent_process", 'r', 1)[0]
                     print(f"Question {count}", f"{task['id']}: {task['task'][0]}")
                     pprint.pprint(task)
-                    agent.run(task)
+                    agent.run(task, )
                     count += 1
         else:
             print("no such group")

@@ -1,4 +1,4 @@
-from src.llms.llevel.algorithms import train_loop
+from src.algorithms import train_loop
 from src.llms.llevel.finetuning.AskingAgent import AskingAgent
 from src.agent.environment import BatchHotpotEnv
 import wandb
@@ -11,6 +11,7 @@ from accelerate import InitProcessGroupKwargs
 transformers.logging.set_verbosity_error()
 
 CONFIG_NAME = "AskingAgent"
+
 
 def main(config):
     print(">>> Configuration file: " + CONFIG_NAME + "<<<")
@@ -71,6 +72,7 @@ def main(config):
 
 if __name__ == "__main__":
     from Tokens import HUGGING_FACE
+
     config = {
         "huggingface_token": HUGGING_FACE,
         "env_name": "hotpot",

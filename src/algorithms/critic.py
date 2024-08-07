@@ -3,6 +3,46 @@ from transformers import AutoTokenizer, AutoModel
 import torch.nn as nn
 
 
+class Critic(nn.Module):
+    def __init__(self,
+            device,
+            accelerator,
+            critic_lm,
+            cache_dir,
+            in_dim,
+            out_dim
+            ):
+        super(Critic, self).__init__()
+        self.device = device
+        self.accelerator = accelerator
+        self.base_lm = AutoModel.from_pretrained(critic_lm, cache_dir=cache_dir).to(device)
+        self.base_tokenizer = AutoTokenizer.from_pretrained(critic_lm, cache_dir=cache_dir)
+        self.base_tokenizer.truncation_side = 'left'
+        self.v_critic = nn.Sequential(nn.Linear(in_dim, in_dim),
+                                       nn.ReLU(),
+                                       nn.Linear(in_dim, in_dim),
+                                       nn.ReLU(),
+                                       nn.Linear(in_dim, out_dim)).to(device)
+
+    def forward(self, observation, detach_model=False):
+        obs_ids = self.base_tokenizer(
+            observation,
+            padding=True,
+            return_tensors='pt',
+            max_length=512,
+            truncation=True
+        ).to(self.device)
+
+        if detach_model:
+            with torch.no_grad():
+                lm_states = self.base_lm(**obs_ids).pooler_output
+        else:
+            lm_states = self.base_lm(**obs_ids).pooler_output
+
+        return self.v_critic(lm_states)
+
+
+
 class DoubleCritic(nn.Module):
     def __init__(self,
                  device,
@@ -38,6 +78,8 @@ class DoubleCritic(nn.Module):
                                        nn.Linear(in_dim, in_dim), \
                                        nn.ReLU(), \
                                        nn.Linear(in_dim, out_dim)).to(device)
+
+
 
     # def prepare(self):
     #     self.base_lm, self.critic1, self.critic2, self.v_critic1, self.v_critic2 = \
